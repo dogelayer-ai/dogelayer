@@ -1,4 +1,4 @@
-# TAO Hash Miner with Proxy Docker Image
+# DogeLayer Miner with Proxy Docker Image
 FROM python:3.11-slim
 
 # 设置工作目录
@@ -13,7 +13,7 @@ RUN apt-get update && apt-get install -y \
 
 # 复制项目文件
 COPY ../../pyproject.toml ./
-COPY ../../taohash ./taohash
+COPY ../../dogelayer ./dogelayer
 
 # 安装Python依赖
 RUN pip install --no-cache-dir -e .
@@ -32,7 +32,7 @@ RUN mkdir -p /app/config \
     && mkdir -p /root/.bittensor/wallets \
     && mkdir -p /root/.bittensor/chains \
     && mkdir -p /root/.bittensor/neurons \
-    && mkdir -p /root/.bittensor/taohash/data/dynamic
+    && mkdir -p /root/.bittensor/dogelayer/data/dynamic
 
 # 设置正确的权限
 RUN chmod -R 755 /root/.bittensor
@@ -43,8 +43,8 @@ ENV PYTHONUNBUFFERED=1
 
 # 健康检查
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python -c "import taohash.miner.miner_with_proxy; print('miner_with_proxy Miner healthy')" || exit 1
+    CMD python -c "import dogelayer.miner.miner_with_proxy; print('miner_with_proxy Miner healthy')" || exit 1
 
 # 启动命令 - 支持命令行参数
-ENTRYPOINT ["python", "-m", "taohash.miner.miner_with_proxy"]
+ENTRYPOINT ["python", "-m", "dogelayer.miner.miner_with_proxy"]
 CMD ["--help"]
