@@ -2,7 +2,7 @@ from pathlib import Path
 
 BLOCK_TIME = 12  # Seconds per block
 
-MAIN_PATH = Path("~", ".bittensor", "taohash").expanduser()
+MAIN_PATH = Path("~", ".bittensor", "dogelayer").expanduser()
 
 VERSION_KEY = 28  # For validators
 U16_MAX = 65535
