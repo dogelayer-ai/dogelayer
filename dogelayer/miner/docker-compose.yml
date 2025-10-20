@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  # 挖矿进程服务 - 连接到外部代理进行挖矿
+  dogelayer-mining-process:
+    image: coinflow/dogelayer-miner:latest
+    container_name: dogelayer-mining-process
+    restart: unless-stopped
+    command: ['python', '-m', 'dogelayer.miner.miner_with_proxy']
+    environment:
+      # Bittensor 配置
+      - NETUID=${NETUID:-2}
+      - SUBTENSOR_NETWORK=${SUBTENSOR_NETWORK:-ws://18.139.113.94:9944}
+      - BT_WALLET_NAME=${BT_WALLET_NAME:-pei_cold_mine}
+      - BT_WALLET_HOTKEY=${BT_WALLET_HOTKEY:-hotkey1}
+
+      # 挖矿配置
+      - LTC_ADDRESS=${LTC_ADDRESS:-ltc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4}
+      - DOGE_ADDRESS=${DOGE_ADDRESS:-DH5yaieqoZN36fDVciNyRueRGvGLR3mr7L}
+
+      # 代理配置 (连接到外部代理服务)
+      - USE_PROXY=${USE_PROXY:-true}
+      - PROXY_TYPE=${PROXY_TYPE:-dogelayer}
+      - PROXY_BASE_PATH=/app/proxy-config
+      - PROXY_PORT=3331
+      - PROXY_PORT_HIGH=3332
+      - DASHBOARD_PORT=8100
+
+      # 增强版矿工配置
+      - ENABLE_AXON=${ENABLE_AXON:-true}
+      - AXON_PORT=${AXON_PORT:-8091}
+      - ENABLE_WEIGHT_SETTING=${ENABLE_WEIGHT_SETTING:-false}
+      - BUSINESS_SERVER_URL=${BUSINESS_SERVER_URL:-}
+      
+      # 日志配置
+      - LOGGING_LEVEL=${LOGGING_LEVEL:-debug}
+
+    ports:
+      # Axon服务端口
+      - "${AXON_PORT:-8091}:8091"
+      # 代理仪表板端口
+      - "${DASHBOARD_PORT:-8100}:8100"
+
+    volumes:
+      # 挂载钱包数据（需要读写权限）
+      - ~/.bittensor:/root/.bittensor
+      # 挂载挖矿数据
+      - ./data:/app/data
+      # 挂载代理配置目录 (从外部代理服务获取)
+      - ./proxy-config:/app/proxy-config
+
+    networks:
+      - dogelayer-network
+
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'python',
+          '-c',
+          "import dogelayer.miner.miner_with_proxy; print('Miner with Proxy healthy')",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  dogelayer-network:
+    driver: bridge
+
+volumes:
+  miner-data:

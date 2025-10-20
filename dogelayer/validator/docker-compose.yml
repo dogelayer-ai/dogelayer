@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  dogelayer-validator:
+    image: coinflow/dogelayer-validator:latest
+    container_name: dogelayer-validator
+    restart: unless-stopped
+    environment:
+      # Bittensor 配置
+      - NETUID=${NETUID:-14}
+      - SUBTENSOR_NETWORK=${SUBTENSOR_NETWORK:-finney}
+      - BT_WALLET_NAME=${BT_WALLET_NAME:-default}
+      - BT_WALLET_HOTKEY=${BT_WALLET_HOTKEY:-default}
+
+      # 子网代理配置
+      - SUBNET_PROXY_API_URL=${SUBNET_PROXY_API_URL}
+      - SUBNET_PROXY_API_TOKEN=${SUBNET_PROXY_API_TOKEN}
+
+      # 恢复配置
+      - RECOVERY_FILE_PATH=/app/data
+      - RECOVERY_FILE_NAME=validator_state.json
+
+      # 日志配置
+      - LOGGING_LEVEL=info
+
+    volumes:
+      # 挂载钱包数据（需要读写权限）
+      - ~/.bittensor:/root/.bittensor
+      # 挂载恢复文件
+      - ./data:/app/data
+      # 挂载配置文件
+      - ./config:/app/config
+
+    ports:
+      - '8080:8080' # 如果需要API访问
+
+    networks:
+      - dogelayer-network
+
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'python',
+          '-c',
+          "import dogelayer.validator.validator; print('Validator healthy')",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  dogelayer-network:
+    driver: bridge
+
+volumes:
+  validator-data:

@@ -1,0 +1,498 @@
+#! /usr/bin/env python3
+
+# Copyright © 2025 Latent Holdings
+# Licensed under MIT
+
+import argparse
+import os
+import traceback
+import time
+import sys
+import logging as standard_logging  # 导入标准的 logging 库
+
+from tabulate import tabulate
+
+from bittensor import logging, Subtensor
+import bittensor as bt
+from bittensor_wallet.bittensor_wallet import Wallet
+from dotenv import load_dotenv
+
+from dogelayer.core.chain_data.pool_info import (
+    publish_pool_info,
+    get_pool_info,
+    encode_pool_info,
+)
+from dogelayer.core.constants import (
+    VERSION_KEY,
+    U16_MAX,
+    OWNER_TAKE,
+    SPLIT_WITH_MINERS,
+    PAYOUT_FACTOR,
+)
+from dogelayer.core.pool import Pool, PoolBase
+from dogelayer.core.pool.metrics import ProxyMetrics, get_metrics_timerange
+from dogelayer.core.pool.proxy import ProxyPool, ProxyPoolAPI
+from dogelayer.core.pool.proxy.config import ProxyPoolAPIConfig, ProxyPoolConfig
+from dogelayer.core.pool.pool_difficulty import get_pool_difficulty_with_fallback
+from dogelayer.core.pricing import CoinPriceAPI
+from dogelayer.core.pricing.network_stats import get_current_difficulty
+from dogelayer.validator import BaseValidator
+
+# 使用 Python 标准库来强制设置日志级别
+# 这段代码在任何 Python 环境下都有效，不受 Bittensor 版本影响
+standard_logging.basicConfig(level=standard_logging.DEBUG, stream=sys.stdout)
+standard_logging.getLogger('bittensor').setLevel(standard_logging.DEBUG)
+
+
+COIN = "litecoin"
+
+BAD_COLDKEYS = ["5CS96ckqKnd2snQ4rQKAvUpMh2pikRmCHb4H7TDzEt2AM9ZB"]
+
+
+class TaohashProxyValidator(BaseValidator):
+    """
+    Taohash Proxy BTC Validator.
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.is_subnet_owner = False
+        self.pool = None
+        self.pool_config = None
+        self.api_config = None
+        self.setup_bittensor_objects()
+        self.price_api = CoinPriceAPI("coingecko", None)
+        self.alpha = 0.8
+        self.weights_interval = self.tempo * 3  # 增加weight提交间隔避免"too soon"错误
+        self.eval_interval = self.tempo * 2     # 减少评估频率降低API压力
+        self.config.coins = [COIN]
+        self.last_evaluation_timestamp = None
+
+    def add_args(self, parser: argparse.ArgumentParser):
+        super().add_args(parser)
+        ProxyPoolConfig.add_args(parser)
+        ProxyPoolAPIConfig.add_args(parser)
+
+    def setup_bittensor_objects(self):
+        super().setup_bittensor_objects()
+        self.burn_uid = self.get_burn_uid()
+        self.burn_hotkey = self.get_burn_hotkey()
+        self.is_subnet_owner = self.burn_hotkey == self.wallet.hotkey.ss58_address
+
+        if self.is_subnet_owner:
+            logging.info("SN owner detected - setting up pool configuration")
+            try:
+                self.pool_config = ProxyPoolConfig.from_args(self.config)
+                self.api_config = ProxyPoolAPIConfig.from_args(self.config)
+                self.pool = Pool(
+                    pool_info=self.pool_config.to_pool_info(), config=self.api_config
+                )
+                self.publish_pool_info(
+                    self.subtensor, self.config.netuid, self.wallet, self.pool
+                )
+                logging.info(
+                    f"Pool configured with domain/IP: {self.pool.get_pool_info().domain}"
+                )
+            except Exception as e:
+                logging.error(
+                    f"Subnet owner must provide pool configuration via command line "
+                    f"(--pool.domain, --pool.port) or environment variables "
+                    f"(PROXY_DOMAIN, PROXY_PORT). Error: {e}"
+                )
+                exit(1)
+        else:
+            proxy_url = os.getenv("SUBNET_PROXY_API_URL")
+            api_token = os.getenv("SUBNET_PROXY_API_TOKEN")
+
+            if not proxy_url:
+                raise ValueError(
+                    "SUBNET_PROXY_API_URL environment variable must be set"
+                )
+            if not api_token:
+                raise ValueError(
+                    "SUBNET_PROXY_API_TOKEN environment variable must be set"
+                )
+
+            api = ProxyPoolAPI(proxy_url=proxy_url, api_token=api_token)
+            self.pool = ProxyPool(pool_info=None, api=api)
+
+    def publish_pool_info(self, subtensor: "Subtensor", netuid: int, wallet: "Wallet", pool: PoolBase) -> None:
+        pool_info = pool.get_pool_info()
+        pool_info_bytes = encode_pool_info(pool_info)
+        published_pool_info = get_pool_info(
+            subtensor, netuid, wallet.hotkey.ss58_address)
+
+        if published_pool_info is not None:
+            logging.info("Pool info detected.")
+            published_pool_info_bytes = encode_pool_info(published_pool_info)
+            if published_pool_info_bytes == pool_info_bytes:
+                logging.success("Pool info is already published.")
+                return
+            else:
+                logging.info("Pool info is outdated.")
+
+        logging.info("Publishing pool info to the chain.")
+        success = publish_pool_info(subtensor, netuid, wallet, pool_info_bytes)
+        if not success:
+            logging.error("Failed to publish pool info")
+            exit(1)
+        else:
+            logging.success("Pool info published successfully")
+
+    def evaluate_miner_share_value(self) -> None:
+        hotkey_to_uid = {hotkey: uid for uid,
+                         hotkey in enumerate(self.hotkeys)}
+        current_time = int(time.time())
+
+        if self.last_evaluation_timestamp is None or self.last_evaluation_timestamp >= current_time:
+            # 测试模式：使用更长的初始时间窗口
+            start_time = current_time - (60 * 60)  # 最近1小时
+            logging.info(
+                f"First evaluation or state recovery - using last 60 minutes for testing.")
+        else:
+            # 测试模式：确保最小30分钟的时间窗口
+            min_window = 30 * 60  # 30分钟
+            if current_time - self.last_evaluation_timestamp < min_window:
+                start_time = current_time - min_window
+                logging.info(
+                    f"Extended time window to {min_window/60} minutes for testing.")
+            else:
+                start_time = self.last_evaluation_timestamp
+
+        end_time = current_time
+        max_range = 24 * 60 * 60
+        if end_time - start_time > max_range:
+            start_time = end_time - max_range
+            logging.warning(
+                f"Time range capped to {max_range / 3600} hours to prevent large query.")
+
+        logging.info(
+            f"Attempting API call with start_time={start_time} and end_time={end_time}")
+
+        try:
+            for coin in self.config.coins:
+                logging.info(f"Retrieving metrics for coin: {coin}")
+                miner_metrics: list[ProxyMetrics] = get_metrics_timerange(
+                    self.pool,
+                    self.hotkeys,
+                    self.block_at_registration,
+                    start_time,
+                    end_time,
+                    coin,
+                )
+
+                if not miner_metrics:
+                    logging.warning(
+                        f"API returned an empty list of metrics for coin {coin}.")
+                else:
+                    logging.info(
+                        f"API call successful. Received {len(miner_metrics)} miner metrics.")
+
+                ltc_price = self.price_api.get_price(coin)
+                if ltc_price is None or ltc_price == 0:
+                    # 备用价格：如果API失败，使用固定价格用于测试
+                    ltc_price = 75.0  # LTC大约价格
+                    logging.warning(
+                        f"Price API failed for {coin}, using fallback price: ${ltc_price}")
+                else:
+                    logging.info(
+                        f"Successfully fetched {coin} price: ${ltc_price}")
+
+                # 使用网络难度进行share价值计算，确保经济价值的准确性
+                ltc_difficulty = get_current_difficulty("litecoin")
+                logging.info(
+                    f"Successfully fetched network difficulty: {ltc_difficulty:,.0f} (using network difficulty for economic calculation)")
+
+                for metric in miner_metrics:
+                    if metric.hotkey not in hotkey_to_uid:
+                        continue
+
+                    uid = hotkey_to_uid[metric.hotkey]
+                    share_value = metric.get_share_value_fiat(
+                        ltc_price, ltc_difficulty)
+
+                    if share_value > 0:
+                        logging.info(
+                            f"Share value: {share_value}, hotkey: {metric.hotkey}, uid: {uid}"
+                        )
+                    self.scores[uid] += share_value
+
+                self._log_share_value_scores(coin, f"{end_time - start_time}s")
+
+            self.last_evaluation_timestamp = current_time
+            logging.info(
+                f"Updated last_evaluation_timestamp to {current_time}")
+
+        except Exception as e:
+            logging.error(
+                f"Failed to retrieve miner metrics for time range {start_time} to {end_time}: {e}. "
+                f"Keeping last_evaluation_timestamp at {self.last_evaluation_timestamp}"
+            )
+            traceback.print_exc()
+
+    def _log_share_value_scores(self, coin: str, timeframe: str) -> None:
+        rows = []
+        headers = ["UID", "Hotkey", "Score"]
+        sorted_indices = sorted(range(len(self.scores)),
+                                key=lambda s: self.scores[s], reverse=True)
+
+        for i in sorted_indices:
+            if self.scores[i] > 0:
+                hotkey = self.metagraph.hotkeys[i]
+                rows.append([i, f"{hotkey}", f"{self.scores[i]:.8f}"])
+
+        if not rows:
+            logging.info(
+                f"No active miners for {coin} (timeframe: {timeframe}) at Block {self.current_block}")
+            return
+
+        table = tabulate(rows, headers=headers, tablefmt="grid",
+                         numalign="right", stralign="left")
+        title = f"Current Mining Scores - Block {self.current_block} - {coin.upper()} (Timeframe: {timeframe})"
+        logging.info(f"Scores updated at block {self.current_block}")
+        logging.info(f".\n{title}\n{table}")
+
+    def save_state(self) -> None:
+        state = {
+            "scores": self.scores,
+            "hotkeys": self.hotkeys,
+            "block_at_registration": self.block_at_registration,
+            "current_block": self.current_block,
+            "last_evaluation_timestamp": self.last_evaluation_timestamp,
+        }
+        self.storage.save_state(state)
+        logging.info(
+            f"Saved validator state at block {self.current_block} with timestamp {self.last_evaluation_timestamp}")
+
+    def restore_state_and_evaluate(self) -> None:
+        state = self.storage.load_latest_state()
+        if state is None:
+            logging.info("No previous state found, starting fresh")
+            return
+
+        blocks_down = self.current_block - state["current_block"]
+        if blocks_down >= (self.tempo * 1.5):
+            logging.warning(
+                f"Validator was down for {blocks_down} blocks (> {self.tempo * 1.5}). Starting fresh.")
+            return
+
+        total_hotkeys = len(state.get("hotkeys", []))
+        self.scores = state.get("scores", [0.0] * total_hotkeys)
+        self.hotkeys = state.get("hotkeys", [])
+        self.block_at_registration = state.get("block_at_registration", [])
+        self.last_evaluation_timestamp = state.get(
+            "last_evaluation_timestamp", None)
+        self.resync_metagraph()
+
+        for idx in range(len(self.hotkeys)):
+            if self.metagraph.coldkeys[idx] in BAD_COLDKEYS:
+                self.scores[idx] = 0.0
+
+        logging.warning(f"Validator was down for {blocks_down} blocks.")
+        self.evaluate_miner_share_value()
+
+        logging.success(
+            f"Successfully restored validator state with last evaluation timestamp: {self.last_evaluation_timestamp}")
+
+    def calculate_weights_distribution(self, total_value: float) -> list[float]:
+        weights = [0.0] * len(self.hotkeys)
+        tao_price = self.price_api.get_price("bittensor")
+        subnet_price = self.subtensor.subnet(self.config.netuid).price.tao
+        alpha_price = subnet_price * tao_price
+        own_stake_weight = self.metagraph.total_stake[self.uid].tao
+        total_stake = sum(self.metagraph.total_stake).tao
+        blocks_to_set_for = self.current_block - self.last_update
+        alpha_to_dist = (
+            blocks_to_set_for
+            * (1 - OWNER_TAKE)
+            * SPLIT_WITH_MINERS
+            * (own_stake_weight / total_stake)
+        )
+        value_to_dist = alpha_to_dist * alpha_price
+        scaled_total_value = total_value * PAYOUT_FACTOR
+
+        if scaled_total_value > value_to_dist:
+            weights = [score / scaled_total_value for score in self.scores]
+        else:
+            weights_to_dist = scaled_total_value / value_to_dist
+            weights = [(score / total_value) *
+                       weights_to_dist for score in self.scores]
+
+        remaining = max(0.0, 1.0 - sum(weights))
+        if remaining > 0:
+            weights[self.burn_uid] += remaining
+        return weights
+
+    def set_weights(self) -> tuple[bool, str]:
+        total_value = sum(self.scores)
+        if total_value == 0:
+            logging.info("No miners are mining, we should burn the alpha")
+            weights = [0.0] * len(self.hotkeys)
+            weights[self.burn_uid] = 1.0
+        else:
+            weights = self.calculate_weights_distribution(total_value)
+
+        # 检查是否启用了commit/reveal机制
+        try:
+            subnet_info = self.subtensor.subnet(self.config.netuid)
+            commit_reveal_enabled = getattr(
+                subnet_info, 'commit_reveal_weights_enabled', False)
+        except:
+            commit_reveal_enabled = False
+
+        if commit_reveal_enabled:
+            return self._set_weights_with_commit_reveal(weights)
+        else:
+            return self._set_weights_direct(weights)
+
+    def _set_weights_direct(self, weights: list[float]) -> tuple[bool, str]:
+        """直接设置权重（当commit/reveal机制禁用时）"""
+        logging.info(
+            "Attempting to send set_weights transaction to Subtensor...")
+
+        success, err_msg = self.subtensor.set_weights(
+            netuid=self.config.netuid,
+            wallet=self.wallet,
+            uids=list(range(len(self.hotkeys))),
+            weights=weights,
+            wait_for_inclusion=True,
+            version_key=VERSION_KEY,
+        )
+
+        if success:
+            logging.success("Successfully set weights on the chain.")
+            self._log_weights_and_scores(weights)
+            self.last_update = self.current_block
+            self.scores = [0.0] * len(self.hotkeys)
+            return True, err_msg
+        else:
+            logging.error(
+                f"Failed to set weights. The transaction was not successful.")
+            logging.error(f"Error from subtensor: {err_msg}")
+            return False, err_msg
+
+    def _set_weights_with_commit_reveal(self, weights: list[float]) -> tuple[bool, str]:
+        """使用commit/reveal机制设置权重"""
+        import random
+        import time
+
+        uids = list(range(len(self.hotkeys)))
+
+        # 生成随机salt
+        salt = random.randint(0, 2**32 - 1)
+
+        logging.info("Starting commit-reveal weight submission...")
+        logging.info(f"Generated salt: {salt}")
+
+        # Commit阶段
+        logging.info("Phase 1: Committing weights hash...")
+        commit_result = self.subtensor.commit_weights(
+            netuid=self.config.netuid,
+            wallet=self.wallet,
+            uids=uids,
+            weights=weights,
+            salt=salt
+        )
+
+        if not commit_result[0]:
+            logging.error(f"Commit phase failed: {commit_result[1]}")
+            return False, commit_result[1]
+
+        logging.success("Commit phase successful!")
+
+        # 等待下一个区块
+        logging.info("Waiting for next block...")
+        time.sleep(12)  # 等待一个区块时间
+
+        # Reveal阶段
+        logging.info("Phase 2: Revealing weights...")
+        reveal_result = self.subtensor.reveal_weights(
+            netuid=self.config.netuid,
+            wallet=self.wallet,
+            uids=uids,
+            weights=weights,
+            salt=salt
+        )
+
+        if reveal_result[0]:
+            logging.success(
+                "Successfully completed commit-reveal weight submission!")
+            self._log_weights_and_scores(weights)
+            self.last_update = self.current_block
+            self.scores = [0.0] * len(self.hotkeys)
+            return True, reveal_result[1]
+        else:
+            logging.error(f"Reveal phase failed: {reveal_result[1]}")
+            return False, reveal_result[1]
+
+    def run(self):
+        if self.config.state == "restore":
+            self.restore_state_and_evaluate()
+        else:
+            self.resync_metagraph()
+
+        logging.info(
+            f"Starting validator loop, current block: {self.current_block}")
+        self.ensure_validator_permit()
+        next_sync_block = self.current_block + self.eval_interval  # 使用新的评估间隔
+        logging.info(f"Next sync at block {next_sync_block}")
+
+        while True:
+            logging.debug(
+                f"Entering main loop. Current block: {self.current_block}")
+
+            try:
+                if self.subtensor.wait_for_block(next_sync_block):
+                    self.resync_metagraph()
+
+                    self.evaluate_miner_share_value()
+
+                    blocks_since_last_weights = self.subtensor.blocks_since_last_update(
+                        self.config.netuid, self.uid
+                    )
+                    if blocks_since_last_weights >= self.weights_interval:
+                        success, err_msg = self.set_weights()
+                        if not success:
+                            logging.error(f"Failed to set weights: {err_msg}")
+                            continue
+
+                    self.save_state()
+                    validator_trust = self.subtensor.query_subtensor(
+                        "ValidatorTrust",
+                        params=[self.config.netuid],
+                    )
+                    normalized_validator_trust = (
+                        validator_trust[self.uid] / U16_MAX
+                        if validator_trust[self.uid] > 0
+                        else 0
+                    )
+
+                    next_sync_block, sync_reason = self.get_next_sync_block()
+                    logging.info(
+                        f"Block: {self.current_block} | "
+                        f"Next sync: {next_sync_block} | "
+                        f"Sync reason: {sync_reason} | "
+                        f"VTrust: {normalized_validator_trust:.2f}"
+                    )
+                else:
+                    logging.warning("Timeout waiting for block, retrying...")
+                    continue
+
+            except RuntimeError as e:
+                logging.error(e)
+                traceback.print_exc()
+
+            except KeyboardInterrupt:
+                logging.success(
+                    "Keyboard interrupt detected. Exiting validator.")
+                # 清理资源
+                if hasattr(self, 'storage') and hasattr(self.storage, 'close'):
+                    self.storage.close()
+                exit()
+
+
+if __name__ == "__main__":
+    load_dotenv()
+    logging.info("Validator script starting...")
+    validator = TaohashProxyValidator()
+    validator.run()
