@@ -116,7 +116,7 @@ class JsonValidatorStorage(BaseJsonStorage):
             "uid": state.get("uid", 0),
             "netuid": state.get("netuid", 2),
             "current_block": state.get("current_block", 0),
-            "total_stake": state.get("total_stake", 0.0),
+            "validator_stake": state.get("validator_stake", 0.0),
             "last_update": state.get("last_update", 0),
             "scores": state.get("scores", []),
             "weights": state.get("weights", []),
@@ -132,27 +132,20 @@ class JsonValidatorStorage(BaseJsonStorage):
         validator_hotkey = state.get("hotkey", "")
         current_block = state.get("current_block", 0)
         scores = state.get("scores", [])
+        hotkeys = state.get("hotkeys", [])
+        block_at_registration = state.get("block_at_registration", [])
         
-        # 获取矿工信息（假设state中包含矿工数据）
-        miners_data = state.get("miners", [])
-        
-        for i, miner_data in enumerate(miners_data):
+        # 直接从state的基础数据构建矿工评分
+        for i, hotkey in enumerate(hotkeys):
             if i < len(scores):
                 miner_score = {
                     "validator_hotkey": validator_hotkey,
-                    "miner_hotkey": miner_data.get("hotkey", ""),
-                    "miner_coldkey": miner_data.get("coldkey", ""),
-                    "miner_uid": miner_data.get("uid", i),
+                    "miner_hotkey": hotkey,
+                    "miner_uid": i,
                     "netuid": state.get("netuid", 2),
                     "evaluation_block": current_block,
                     "score": float(scores[i]) if scores[i] is not None else 0.0,
-                    "hashrate_1h": miner_data.get("hashrate_1h", 0.0),
-                    "hashrate_24h": miner_data.get("hashrate_24h", 0.0),
-                    "shares_1h": miner_data.get("shares_1h", 0),
-                    "shares_24h": miner_data.get("shares_24h", 0),
-                    "difficulty": miner_data.get("difficulty", 0.0),
-                    "miner_status": miner_data.get("status", "active"),
-                    "last_submission_time": miner_data.get("last_submission", datetime.now().isoformat()),
+                    "registration_block": block_at_registration[i] if i < len(block_at_registration) else 0,
                     "evaluation_time": datetime.now().isoformat()
                 }
                 miner_scores.append(miner_score)
@@ -270,7 +263,7 @@ class RedisValidatorStorage(BaseRedisStorage):
             "uid": state.get("uid", 0),
             "netuid": state.get("netuid", 2),
             "current_block": state.get("current_block", 0),
-            "total_stake": state.get("total_stake", 0.0),
+            "validator_stake": state.get("validator_stake", 0.0),
             "last_update": state.get("last_update", 0),
             "scores": state.get("scores", []),
             "weights": state.get("weights", []),
@@ -286,27 +279,20 @@ class RedisValidatorStorage(BaseRedisStorage):
         validator_hotkey = state.get("hotkey", "")
         current_block = state.get("current_block", 0)
         scores = state.get("scores", [])
+        hotkeys = state.get("hotkeys", [])
+        block_at_registration = state.get("block_at_registration", [])
         
-        # 获取矿工信息（假设state中包含矿工数据）
-        miners_data = state.get("miners", [])
-        
-        for i, miner_data in enumerate(miners_data):
+        # 直接从state的基础数据构建矿工评分
+        for i, hotkey in enumerate(hotkeys):
             if i < len(scores):
                 miner_score = {
                     "validator_hotkey": validator_hotkey,
-                    "miner_hotkey": miner_data.get("hotkey", ""),
-                    "miner_coldkey": miner_data.get("coldkey", ""),
-                    "miner_uid": miner_data.get("uid", i),
+                    "miner_hotkey": hotkey,
+                    "miner_uid": i,
                     "netuid": state.get("netuid", 2),
                     "evaluation_block": current_block,
                     "score": float(scores[i]) if scores[i] is not None else 0.0,
-                    "hashrate_1h": miner_data.get("hashrate_1h", 0.0),
-                    "hashrate_24h": miner_data.get("hashrate_24h", 0.0),
-                    "shares_1h": miner_data.get("shares_1h", 0),
-                    "shares_24h": miner_data.get("shares_24h", 0),
-                    "difficulty": miner_data.get("difficulty", 0.0),
-                    "miner_status": miner_data.get("status", "active"),
-                    "last_submission_time": miner_data.get("last_submission", datetime.now().isoformat()),
+                    "registration_block": block_at_registration[i] if i < len(block_at_registration) else 0,
                     "evaluation_time": datetime.now().isoformat()
                 }
                 miner_scores.append(miner_score)

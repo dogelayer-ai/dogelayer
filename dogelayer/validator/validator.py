@@ -254,12 +254,38 @@ class TaohashProxyValidator(BaseValidator):
 
     def save_state(self) -> None:
         state = {
+            # 核心运行状态
             "scores": self.scores,
             "hotkeys": self.hotkeys,
             "block_at_registration": self.block_at_registration,
             "current_block": self.current_block,
             "last_evaluation_timestamp": self.last_evaluation_timestamp,
+            
+            # 验证者基本信息
+            "hotkey": self.wallet.hotkey.ss58_address if self.wallet and self.wallet.hotkey else "",
+            "coldkey": self.wallet.coldkeypub.ss58_address if self.wallet and self.wallet.coldkeypub else "",
+            "uid": self.uid if hasattr(self, 'uid') else 0,
+            "netuid": self.config.netuid,
+            "validator_stake": self.metagraph.total_stake[self.uid].tao if hasattr(self, 'metagraph') and hasattr(self, 'uid') and self.uid < len(self.metagraph.total_stake) else 0.0,
+            "last_update": self.last_evaluation_timestamp,
+            "version": "1.0.0",
+            
         }
+        
+        # 打印 state 详细信息
+        logging.info("=== Validator State Details ===")
+        logging.info(f"Block: {state['current_block']}")
+        logging.info(f"UID: {state['uid']}")
+        logging.info(f"Netuid: {state['netuid']}")
+        logging.info(f"Hotkey: {state['hotkey'][:8]}...{state['hotkey'][-8:] if state['hotkey'] else 'N/A'}")
+        logging.info(f"Coldkey: {state['coldkey'][:8]}...{state['coldkey'][-8:] if state['coldkey'] else 'N/A'}")
+        logging.info(f"Validator Stake: {state['validator_stake']:.4f} TAO")
+        logging.info(f"Scores Count: {len(state['scores']) if state['scores'] else 0}")
+        logging.info(f"Hotkeys Count: {len(state['hotkeys']) if state['hotkeys'] else 0}")
+        logging.info(f"Last Evaluation: {state['last_evaluation_timestamp']}")
+        logging.info(f"Version: {state['version']}")
+        logging.info("===============================")
+        
         self.storage.save_state(state)
         logging.info(
             f"Saved validator state at block {self.current_block} with timestamp {self.last_evaluation_timestamp}")
