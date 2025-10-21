@@ -517,8 +517,13 @@ class TaohashProxyValidator(BaseValidator):
                 exit()
 
 
-if __name__ == "__main__":
+def main():
+    """Main entry point for the validator."""
     load_dotenv()
     logging.info("Validator script starting...")
     validator = TaohashProxyValidator()
     validator.run()
+
+
+if __name__ == "__main__":
+    main()

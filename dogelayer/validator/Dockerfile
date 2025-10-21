@@ -13,8 +13,8 @@ RUN apt-get update && apt-get install -y \
 
 
 # 复制项目文件
-COPY ../../pyproject.toml ./
-COPY ../../dogelayer ./dogelayer
+COPY pyproject.toml ./
+COPY dogelayer ./dogelayer
 
 # 安装Python依赖
 RUN pip install --no-cache-dir -e .
@@ -38,7 +38,7 @@ ENV PYTHONUNBUFFERED=1
 
 # 健康检查
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python -c "import dogelayer.validator.validator; print('Validator healthy')" || exit 1
+    CMD python -c "import dogelayer.validator.validator; print('Validator import successful')" || exit 1
 
 # 启动命令 - 支持命令行参数
 ENTRYPOINT ["python", "-m", "dogelayer.validator.validator"]
