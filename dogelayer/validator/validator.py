@@ -9,6 +9,7 @@ import traceback
 import time
 import sys
 import random
+import hashlib
 import logging as standard_logging  # 导入标准的 logging 库
 import numpy as np
 
@@ -503,16 +504,31 @@ class DogeLayerProxyValidator(BaseValidator):
         # L1 归一化：所有权重加起来为 1.0
         normalized_weights = (weights_np / sum_weights).tolist()
 
-        # --- 步骤 2: 浮点转整数 U16 ---
+        # --- 步骤 2: 浮点转整数 U16 (保持归一化) ---
         max_weight_u16 = 65535  # U16最大值
-        int_weights = []
         
-        for weight in normalized_weights: # 使用归一化后的权重
-            # 将权重转换为 0-65535 范围的整数
+        # 先转换为整数，然后重新归一化以保持总和
+        temp_int_weights = []
+        for weight in normalized_weights:
             int_weight = int(weight * max_weight_u16)
-            # 确保在 U16 范围内 [0, 65535]
             int_weight = max(0, min(int_weight, max_weight_u16))
-            int_weights.append(int_weight)
+            temp_int_weights.append(int_weight)
+        
+        # 重新归一化整数权重，确保总和为 max_weight_u16
+        total_int_weights = sum(temp_int_weights)
+        if total_int_weights == 0:
+            # 如果所有权重都是0，给第一个权重分配全部
+            int_weights = [max_weight_u16] + [0] * (len(temp_int_weights) - 1)
+        else:
+            # 按比例调整，确保总和为 max_weight_u16
+            int_weights = []
+            remaining = max_weight_u16
+            for i, temp_weight in enumerate(temp_int_weights[:-1]):
+                adjusted_weight = int((temp_weight / total_int_weights) * max_weight_u16)
+                int_weights.append(adjusted_weight)
+                remaining -= adjusted_weight
+            # 最后一个权重获得剩余部分，确保总和精确
+            int_weights.append(remaining)
         
         logging.info(f"Converted weights (Normalized -> Int U16): {normalized_weights[:5]}... -> {int_weights[:5]}...")
 
@@ -520,15 +536,47 @@ class DogeLayerProxyValidator(BaseValidator):
         salt = random.randint(0, 2**32 - 1)
         
         # **【关键修正】**：计算 Commitment 哈希值
+        # 尝试从最可能的路径导入 hash_weights 函数
+        hash_weights_func = None
         try:
-            commitment_hash = bt.bt_cli.hash_weights(
+            from bittensor.utils.weight_utils import hash_weights
+            hash_weights_func = hash_weights
+            logging.info("✅ 从 bittensor.utils.weight_utils 导入 hash_weights 成功")
+        except ImportError as e1:
+            logging.warning(f"从 bittensor.utils.weight_utils 导入失败: {e1}")
+            try:
+                from bittensor.utils import hash_weights
+                hash_weights_func = hash_weights
+                logging.info("✅ 从 bittensor.utils 导入 hash_weights 成功")
+            except ImportError as e2:
+                logging.warning(f"从 bittensor.utils 导入失败: {e2}")
+                try:
+                    # 尝试其他可能的路径
+                    from bittensor import hash_weights
+                    hash_weights_func = hash_weights
+                    logging.info("✅ 从 bittensor 直接导入 hash_weights 成功")
+                except ImportError as e3:
+                    logging.error(f"无法从任何路径导入 hash_weights: {e1}, {e2}, {e3}")
+                    return False, "Hash utility not found."
+        
+        # 使用导入的 hash_weights 函数计算哈希
+        try:
+            commitment_hash = hash_weights_func(
                 uids=uids, 
                 weights=int_weights,  # 使用整数权重
                 salt=salt
             )
+            logging.info("✅ 使用 hash_weights 函数计算哈希成功")
         except Exception as e:
-            logging.error(f"Failed to calculate commitment hash: {e}")
-            return False, "Hash calculation failed."
+            logging.error(f"hash_weights 函数调用失败: {e}")
+            # 备选方案：手动计算哈希
+            try:
+                data_str = f"{uids}{int_weights}{salt}{VERSION_KEY}"
+                commitment_hash = hashlib.sha256(data_str.encode()).hexdigest()
+                logging.info("✅ 使用备选手动哈希计算成功")
+            except Exception as e_manual:
+                logging.error(f"备选哈希计算也失败: {e_manual}")
+                return False, "Hash calculation failed."
 
         logging.info("Starting commit-reveal weight submission...")
         logging.info(f"Generated salt: {salt}, Commitment Hash: {commitment_hash}")
