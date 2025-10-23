@@ -350,49 +350,86 @@ class TaohashProxyValidator(BaseValidator):
         return weights
 
     def _get_commit_reveal_status(self) -> bool:
-        """使用btcli命令获取commit_reveal_weights_enabled状态"""
+        """使用 Bittensor SDK 查询 commit_reveal_weights_enabled 状态"""
+        try:
+            # 使用当前验证者的 subtensor 连接
+            hyperparams_obj = self.subtensor.get_subnet_hyperparameters(netuid=self.config.netuid)
+            
+            # 检查是否存在该属性
+            if hasattr(hyperparams_obj, 'commit_reveal_weights_enabled'):
+                param_value = getattr(hyperparams_obj, 'commit_reveal_weights_enabled')
+                logging.info(f"✅ 成功获取 commit_reveal_weights_enabled: {param_value}")
+                return bool(param_value)
+            else:
+                logging.warning("❌ 未在 SubnetHyperparameters 对象中找到 'commit_reveal_weights_enabled' 属性")
+                return False
+                
+        except Exception as e:
+            logging.error(f"❌ 使用 SDK 查询超参数失败: {e}")
+            # 降级到原有的 btcli 命令方法
+            return self._get_commit_reveal_status_fallback()
+
+    def _get_commit_reveal_status_fallback(self) -> bool:
+        """备用方法：使用 btcli 命令获取状态"""
         try:
             import subprocess
+            import shutil
             
-            # 从配置文件获取netuid和网络
             netuid = str(self.config.netuid)
             network = self.config.subtensor.network
             
-            logging.debug(f"查询超参数: netuid={netuid}, network={network}")
+            logging.debug(f"备用查询: netuid={netuid}, network={network}")
             
-            cmd = [
-                "btcli", "subnet", "hyperparameters",
-                "--netuid", netuid,
-                "--subtensor.chain_endpoint", network
-            ]
+            btcli_path = shutil.which("btcli")
+            if not btcli_path:
+                cmd = [
+                    "python", "-m", "bittensor.btcli", "subnet", "hyperparameters",
+                    "--netuid", netuid,
+                    "--subtensor.chain_endpoint", network
+                ]
+            else:
+                cmd = [
+                    "btcli", "subnet", "hyperparameters",
+                    "--netuid", netuid,
+                    "--subtensor.chain_endpoint", network
+                ]
             
             result = subprocess.run(cmd, capture_output=True, text=True, check=True)
             output = result.stdout
             
-            # 查找commit_reveal_weights_enabled行
             for line in output.split('\n'):
                 if 'commit_reveal_weights_enabled' in line:
                     parts = line.split()
                     if len(parts) >= 2:
                         value = parts[1].lower() == 'true'
-                        logging.info(f"✅ 从超参数获取commit_reveal_weights_enabled: {value}")
+                        logging.info(f"✅ 备用方法获取到: {value}")
                         return value
             
-            logging.warning("❌ 未在超参数中找到commit_reveal_weights_enabled")
+            logging.warning("❌ 备用方法未找到参数")
             return False
-                        
+                            
         except Exception as e:
-            logging.error(f"❌ 获取超参数失败: {e}")
-            # 降级到Python SDK方法作为备选
-            try:
-                subnet_info = self.subtensor.subnet(self.config.netuid)
-                commit_reveal_enabled = getattr(
-                    subnet_info, 'commit_reveal_weights_enabled', False)
-                logging.warning(f"🔄 降级使用Python SDK: {commit_reveal_enabled}")
-                return bool(commit_reveal_enabled)
-            except Exception as fallback_e:
-                logging.error(f"❌ Python SDK备选方法也失败: {fallback_e}")
-                return False
+            logging.error(f"❌ 备用方法也失败: {e}")
+            return False
+
+    def get_hyperparameter_value(self, param_name: str):
+        """
+        通用方法：查询指定的子网超参数
+        """
+        try:
+            hyperparams_obj = self.subtensor.get_subnet_hyperparameters(netuid=self.config.netuid)
+            
+            if hasattr(hyperparams_obj, param_name):
+                param_value = getattr(hyperparams_obj, param_name)
+                logging.info(f"✅ 成功获取 {param_name}: {param_value} (类型: {type(param_value)})")
+                return param_value
+            else:
+                logging.warning(f"❌ 未找到超参数: {param_name}")
+                return None
+                
+        except Exception as e:
+            logging.error(f"❌ 查询超参数 {param_name} 失败: {e}")
+            return None
 
     def set_weights(self) -> tuple[bool, str]:
         total_value = sum(self.scores)
