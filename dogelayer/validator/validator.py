@@ -349,6 +349,51 @@ class TaohashProxyValidator(BaseValidator):
             weights[self.burn_uid] += remaining
         return weights
 
+    def _get_commit_reveal_status(self) -> bool:
+        """使用btcli命令获取commit_reveal_weights_enabled状态"""
+        try:
+            import subprocess
+            
+            # 从配置文件获取netuid和网络
+            netuid = str(self.config.netuid)
+            network = self.config.subtensor.network
+            
+            logging.debug(f"查询超参数: netuid={netuid}, network={network}")
+            
+            cmd = [
+                "btcli", "subnet", "hyperparameters",
+                "--netuid", netuid,
+                "--subtensor.chain_endpoint", network
+            ]
+            
+            result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+            output = result.stdout
+            
+            # 查找commit_reveal_weights_enabled行
+            for line in output.split('\n'):
+                if 'commit_reveal_weights_enabled' in line:
+                    parts = line.split()
+                    if len(parts) >= 2:
+                        value = parts[1].lower() == 'true'
+                        logging.info(f"✅ 从超参数获取commit_reveal_weights_enabled: {value}")
+                        return value
+            
+            logging.warning("❌ 未在超参数中找到commit_reveal_weights_enabled")
+            return False
+                        
+        except Exception as e:
+            logging.error(f"❌ 获取超参数失败: {e}")
+            # 降级到Python SDK方法作为备选
+            try:
+                subnet_info = self.subtensor.subnet(self.config.netuid)
+                commit_reveal_enabled = getattr(
+                    subnet_info, 'commit_reveal_weights_enabled', False)
+                logging.warning(f"🔄 降级使用Python SDK: {commit_reveal_enabled}")
+                return bool(commit_reveal_enabled)
+            except Exception as fallback_e:
+                logging.error(f"❌ Python SDK备选方法也失败: {fallback_e}")
+                return False
+
     def set_weights(self) -> tuple[bool, str]:
         total_value = sum(self.scores)
         if total_value == 0:
@@ -359,12 +404,8 @@ class TaohashProxyValidator(BaseValidator):
             weights = self.calculate_weights_distribution(total_value)
 
         # 检查是否启用了commit/reveal机制
-        try:
-            subnet_info = self.subtensor.subnet(self.config.netuid)
-            commit_reveal_enabled = getattr(
-                subnet_info, 'commit_reveal_weights_enabled', False)
-        except:
-            commit_reveal_enabled = False
+        commit_reveal_enabled = self._get_commit_reveal_status()
+        logging.info(f"🎯 commit_reveal_weights_enabled: {commit_reveal_enabled}")
 
         if commit_reveal_enabled:
             return self._set_weights_with_commit_reveal(weights)
