@@ -8,7 +8,9 @@ import os
 import traceback
 import time
 import sys
+import random
 import logging as standard_logging  # 导入标准的 logging 库
+import numpy as np
 
 from tabulate import tabulate
 
@@ -476,54 +478,110 @@ class DogeLayerProxyValidator(BaseValidator):
             return False, err_msg
 
     def _set_weights_with_commit_reveal(self, weights: list[float]) -> tuple[bool, str]:
-        """使用commit/reveal机制设置权重"""
-        import random
-        import time
+        """
+        使用 commit/reveal 机制设置权重。
+        注意：此方法假设 self.wallet, self.subtensor, self.config, self.hotkeys 等已在类中定义。
+        """
+        
+        # 所需的库已在文件开头导入：random, time, numpy, bittensor, logging
+
+        # 如果 weights 列表为空，直接返回
+        if not weights:
+            logging.warning("Weights list is empty. Cannot set weights.")
+            return False, "Weights list is empty."
 
         uids = list(range(len(self.hotkeys)))
+        
+        # --- 步骤 1: 权重标准化 (L1 归一化) ---
+        weights_np = np.array(weights)
+        sum_weights = weights_np.sum()
+        
+        if sum_weights == 0:
+            logging.warning("Weights sum to zero. Cannot set weights.")
+            return False, "Weights sum is zero."
+            
+        # L1 归一化：所有权重加起来为 1.0
+        normalized_weights = (weights_np / sum_weights).tolist()
 
-        # 生成随机salt
+        # --- 步骤 2: 浮点转整数 U16 ---
+        max_weight_u16 = 65535  # U16最大值
+        int_weights = []
+        
+        for weight in normalized_weights: # 使用归一化后的权重
+            # 将权重转换为 0-65535 范围的整数
+            int_weight = int(weight * max_weight_u16)
+            # 确保在 U16 范围内 [0, 65535]
+            int_weight = max(0, min(int_weight, max_weight_u16))
+            int_weights.append(int_weight)
+        
+        logging.info(f"Converted weights (Normalized -> Int U16): {normalized_weights[:5]}... -> {int_weights[:5]}...")
+
+        # --- 步骤 3: 准备 Commitment 数据 ---
         salt = random.randint(0, 2**32 - 1)
+        
+        # **【关键修正】**：计算 Commitment 哈希值
+        try:
+            commitment_hash = bt.bt_cli.hash_weights(
+                uids=uids, 
+                weights=int_weights,  # 使用整数权重
+                salt=salt
+            )
+        except Exception as e:
+            logging.error(f"Failed to calculate commitment hash: {e}")
+            return False, "Hash calculation failed."
 
         logging.info("Starting commit-reveal weight submission...")
-        logging.info(f"Generated salt: {salt}")
+        logging.info(f"Generated salt: {salt}, Commitment Hash: {commitment_hash}")
 
-        # Commit阶段
+        # --- Phase 1: Commit 阶段 ---
         logging.info("Phase 1: Committing weights hash...")
+        
+        # **【关键修正】**：提交 Commitment 哈希值
         commit_result = self.subtensor.commit_weights(
             netuid=self.config.netuid,
             wallet=self.wallet,
-            uids=uids,
-            weights=weights,
-            salt=salt
+            commitment=commitment_hash # 提交计算出的哈希值
         )
 
         if not commit_result[0]:
             logging.error(f"Commit phase failed: {commit_result[1]}")
             return False, commit_result[1]
 
-        logging.success("Commit phase successful!")
+        logging.info("Commit phase successful!")
 
-        # 等待下一个区块
-        logging.info("Waiting for next block...")
-        time.sleep(12)  # 等待一个区块时间
-
-        # Reveal阶段
+        # --- Phase 2: 等待和 Reveal 阶段 ---
+        
+        # 等待 Commit 交易被打包（至少一个区块时间）
+        logging.info("Waiting for Commit transaction inclusion and next block...")
+        time.sleep(12) 
+        
+        # 警告：如果您的子网要求等待一个完整的 Tempo 周期，请将 time.sleep(12) 替换为更长的等待逻辑。
+        
         logging.info("Phase 2: Revealing weights...")
         reveal_result = self.subtensor.reveal_weights(
             netuid=self.config.netuid,
             wallet=self.wallet,
             uids=uids,
-            weights=weights,
+            weights=int_weights,  # 提交原始整数权重和 Salt
             salt=salt
         )
 
         if reveal_result[0]:
-            logging.success(
+            # **【日志修正】**：使用 logging.info 代替 logging.success
+            logging.info(
                 "Successfully completed commit-reveal weight submission!")
-            self._log_weights_and_scores(weights)
-            self.last_update = self.current_block
-            self.scores = [0.0] * len(self.hotkeys)
+            
+            # 将整数权重转换回浮点格式用于日志显示 (注意：这里使用 normalized_weights 即可，因为它们是 L1 归一化的)
+            # self._log_weights_and_scores(normalized_weights) 
+            
+            # 假设这些属性存在于您的类中
+            if hasattr(self, '_log_weights_and_scores'):
+                 self._log_weights_and_scores(normalized_weights) 
+            if hasattr(self, 'current_block'):
+                 self.last_update = self.current_block
+            if hasattr(self, 'scores'):
+                 self.scores = [0.0] * len(self.hotkeys)
+                 
             return True, reveal_result[1]
         else:
             logging.error(f"Reveal phase failed: {reveal_result[1]}")
