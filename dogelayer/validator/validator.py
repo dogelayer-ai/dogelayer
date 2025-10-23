@@ -49,9 +49,9 @@ COIN = "litecoin"
 BAD_COLDKEYS = ["5CS96ckqKnd2snQ4rQKAvUpMh2pikRmCHb4H7TDzEt2AM9ZB"]
 
 
-class TaohashProxyValidator(BaseValidator):
+class DogeLayerProxyValidator(BaseValidator):
     """
-    Taohash Proxy BTC Validator.
+    DogeLayer Proxy BTC Validator.
     """
 
     def __init__(self):
@@ -521,7 +521,7 @@ def main():
     """Main entry point for the validator."""
     load_dotenv()
     logging.info("Validator script starting...")
-    validator = TaohashProxyValidator()
+    validator = DogeLayerProxyValidator()
     validator.run()
 
 

@@ -16,7 +16,7 @@ class ProxyPoolConnectionError(Exception):
 
 class ProxyPoolAPI(PoolAPI):
     """
-    API client for interacting with the Taohash proxy.
+    API client for interacting with the DogeLayer proxy.
 
     The proxy provides worker statistics via REST API with Bearer token authentication.
     """

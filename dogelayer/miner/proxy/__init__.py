@@ -3,20 +3,20 @@ from bittensor.core.config import Config
 from bittensor.utils.btlogging import logging
 
 from dogelayer.miner.proxy.braiins_farm.controller import BraiinsProxyManager
-from dogelayer.miner.proxy.taohash_proxy.controller import TaohashProxyManager
+from dogelayer.miner.proxy.dogelayer_proxy.controller import DogeLayerProxyManager
 from dogelayer.miner.proxy.base import BaseProxyManager
 
-__all__ = ["BaseProxyManager", "BraiinsProxyManager", "TaohashProxyManager"]
+__all__ = ["BaseProxyManager", "BraiinsProxyManager", "DogeLayerProxyManager"]
 
 PROXY_CLASSES = {
-    "taohash": TaohashProxyManager,
+    "dogelayer": DogeLayerProxyManager,
     "braiins": BraiinsProxyManager,
 }
 
 
 def get_proxy_manager(
     proxy_type: str, config: "Config"
-) -> Union[TaohashProxyManager, BraiinsProxyManager]:
+) -> Union[DogeLayerProxyManager, BraiinsProxyManager]:
     """Get a proxy manager instance based on the specified proxy type.
 
     Arguments:

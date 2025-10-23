@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-SimpleMiner - A simplified TaoHash miner for testing subnet connections.
+SimpleMiner - A simplified DogeLayer miner for testing subnet connections.
 
-This script connects to a TaoHash subnet and displays basic mining information
+This script connects to a DogeLayer subnet and displays basic mining information
 without performing actual mining operations. It's useful for:
 - Testing subnet connectivity
 - Verifying wallet registration
@@ -30,7 +30,7 @@ from dogelayer.core.pool import PoolIndex
 
 class SimpleMiner:
     """
-    简化的TaoHash挖矿程序，用于测试子网连接
+    简化的DogeLayer挖矿程序，用于测试子网连接
 
     这个类不依赖BaseMiner，而是直接使用Bittensor SDK来：
     1. 连接到配置的子网
@@ -233,7 +233,7 @@ def main():
     try:
         # 创建参数解析器，使用与miner.py相同的模式
         parser = argparse.ArgumentParser(
-            description="SimpleMiner - 简化的TaoHash子网连接测试工具"
+            description="SimpleMiner - 简化的DogeLayer子网连接测试工具"
         )
 
         # 添加子网参数

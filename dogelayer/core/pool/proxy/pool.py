@@ -11,9 +11,9 @@ from .config import ProxyPoolAPIConfig
 
 class ProxyPool(PoolBase):
     """
-    Taohash Proxy pool implementation.
+    DogeLayer Proxy pool implementation.
 
-    This pool implementation connects to a Taohash proxy instance to retrieve
+    This pool implementation connects to a DogeLayer proxy instance to retrieve
     miner statistics and performance data.
     """
 

@@ -20,22 +20,22 @@ from .src.constants import (
 DEFAULT_PROXY_BASE_PATH = os.path.abspath(os.path.dirname(__file__))
 
 
-class TaohashProxyManager(BaseProxyManager):
+class DogeLayerProxyManager(BaseProxyManager):
     """
-    Manager for TaoHash mining proxy configuration.
-    This manager assumes the TaoHash proxy is already installed and running.
+    Manager for DogeLayer mining proxy configuration.
+    This manager assumes the DogeLayer proxy is already installed and running.
     It only handles health checks and configuration updates.
     """
 
     @staticmethod
     def add_args(parser: "argparse.ArgumentParser") -> None:
         BaseProxyManager.add_args(parser)
-        proxy_group = parser.add_argument_group("taohash_proxy")
+        proxy_group = parser.add_argument_group("dogelayer_proxy")
         proxy_group.add_argument(
             "--proxy_base_path",
             type=str,
             default=os.getenv("PROXY_BASE_PATH", DEFAULT_PROXY_BASE_PATH),
-            help="Path to the TaoHash proxy directory",
+            help="Path to the DogeLayer proxy directory",
         )
         proxy_group.add_argument(
             "--proxy_port",
@@ -65,7 +65,7 @@ class TaohashProxyManager(BaseProxyManager):
         self.dashboard_port = config.dashboard_port
 
         os.makedirs(os.path.dirname(self.config_path), exist_ok=True)
-        logging.info(f"Using taohash proxy configuration path: {self.config_path}")
+        logging.info(f"Using dogelayer proxy configuration path: {self.config_path}")
         logging.info(f"Config directory: {os.path.dirname(self.config_path)}")
         logging.info(
             f"External ports - Normal: {self.proxy_port}, High Diff: {self.proxy_port_high}, Dashboard: {self.dashboard_port}"

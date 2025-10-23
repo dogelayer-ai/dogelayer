@@ -175,7 +175,7 @@ def get_subnet_pool_info():
     print("=" * 60)
 
     print("\nNormal Pool:")
-    print(f"  Stratum host: btc.taohash.com (or {pool_info.domain or pool_info.ip})")
+    print(f"  Stratum host: btc.dogelayer.com (or {pool_info.domain or pool_info.ip})")
     print(f"  Stratum port: {pool_info.port}")
     print(f"  Stratum username: {worker_name}")
     print(f"  Username mode: {worker_name_mode}")
@@ -184,7 +184,7 @@ def get_subnet_pool_info():
     if pool_info.high_diff_port:
         print("\nHigh Difficulty Pool:")
         print(
-            f"  Stratum host: btc.taohash.com (or {pool_info.domain or pool_info.ip})"
+            f"  Stratum host: btc.dogelayer.com (or {pool_info.domain or pool_info.ip})"
         )
         print(f"  Stratum port: {pool_info.high_diff_port}")
         print(f"  Stratum username: {worker_name}")

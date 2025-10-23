@@ -1,5 +1,5 @@
 """
-Shared constants for the TaoHash proxy.
+Shared constants for the DogeLayer proxy.
 """
 
 import os

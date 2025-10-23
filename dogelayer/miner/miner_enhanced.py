@@ -17,18 +17,18 @@ from dogelayer.miner import BaseMiner
 from dogelayer.miner.proxy import (
     get_proxy_manager,
     BraiinsProxyManager,
-    TaohashProxyManager,
+    DogeLayerProxyManager,
 )
 
 DEFAULT_SYNC_FREQUENCY = 6
 
 
-class EnhancedTaoHashMiner(BaseMiner):
+class EnhancedDogeLayerMiner(BaseMiner):
     """
-    Enhanced TaoHash Miner combining proxy mining with axon services.
+    Enhanced DogeLayer Miner combining proxy mining with axon services.
 
     This miner supports:
-    1. Proxy mining (original taohash functionality)
+    1. Proxy mining (original dogelayer functionality)
     2. Axon server for validator requests (taoillium functionality)
     3. Business server integration
     4. Weight setting capabilities
@@ -47,7 +47,7 @@ class EnhancedTaoHashMiner(BaseMiner):
         if getattr(self.config, 'use_proxy', True):
             try:
                 self.proxy_manager = get_proxy_manager(
-                    proxy_type=getattr(self.config, 'proxy_type', 'taohash'),
+                    proxy_type=getattr(self.config, 'proxy_type', 'dogelayer'),
                     config=self.config
                 )
                 logging.info("✅ Proxy manager initialized successfully")
@@ -76,7 +76,7 @@ class EnhancedTaoHashMiner(BaseMiner):
 
         # Generate and log worker name
         worker_name = self._generate_worker_name()
-        logging.info(f"✅ Enhanced TaoHash Miner initialized successfully")
+        logging.info(f"✅ Enhanced DogeLayer Miner initialized successfully")
         logging.info(f"🏷️ Worker Name: {worker_name}")
         logging.info(f"📍 Configured Addresses: {', '.join(self.configured_addrs)}")
         logging.info(f"🆔 Worker ID: {getattr(self, 'worker_id', 'default')}")
@@ -315,7 +315,7 @@ class EnhancedTaoHashMiner(BaseMiner):
             help="Subtensor chain endpoint URL",
         )
 
-        # Original taohash arguments
+        
         parser.add_argument(
             "--btc_address",
             type=str,
@@ -337,9 +337,9 @@ class EnhancedTaoHashMiner(BaseMiner):
         parser.add_argument(
             "--proxy_type",
             type=str,
-            choices=["taohash", "braiins"],
-            default=os.getenv("PROXY_TYPE", "taohash"),
-            help="Proxy type to use (taohash or braiins)",
+            choices=["dogelayer", "braiins"],
+            default=os.getenv("PROXY_TYPE", "dogelayer"),
+            help="Proxy type to use (dogelayer or braiins)",
         )
         parser.add_argument(
             "--use_proxy",
@@ -379,8 +379,8 @@ class EnhancedTaoHashMiner(BaseMiner):
         # Add proxy-specific arguments based on type
         args, _ = parser.parse_known_args()
         if hasattr(args, "proxy_type"):
-            if args.proxy_type == "taohash":
-                TaohashProxyManager.add_args(parser)
+            if args.proxy_type == "dogelayer":
+                DogeLayerProxyManager.add_args(parser)
             elif args.proxy_type == "braiins":
                 BraiinsProxyManager.add_args(parser)
 
@@ -592,7 +592,7 @@ class EnhancedTaoHashMiner(BaseMiner):
                 - Calculate next sync point
                 - Log mining status and performance
         """
-        logging.info("Starting Enhanced TaoHash Miner main loop")
+        logging.info("Starting Enhanced DogeLayer Miner main loop")
 
         # Initial sync
         self.sync_and_refresh()
@@ -693,15 +693,15 @@ class EnhancedTaoHashMiner(BaseMiner):
             self.axon.stop()
             logging.info("Axon server stopped")
 
-        logging.info("Enhanced TaoHash Miner stopped")
+        logging.info("Enhanced DogeLayer Miner stopped")
 
 
 if __name__ == "__main__":
     load_dotenv()
 
     try:
-        miner = EnhancedTaoHashMiner()
-        logging.info("Enhanced TaoHash Miner initialized successfully")
+        miner = EnhancedDogeLayerMiner()
+        logging.info("Enhanced DogeLayer Miner initialized successfully")
 
         # Run the miner
         miner.run()

@@ -11,15 +11,15 @@ from dogelayer.miner import BaseMiner
 from dogelayer.miner.proxy import (
     get_proxy_manager,
     BraiinsProxyManager,
-    TaohashProxyManager,
+    DogeLayerProxyManager,
 )
 
 DEFAULT_SYNC_FREQUENCY = 6
 
 
-class TaoHashMiner(BaseMiner):
+class DogeLayerMiner(BaseMiner):
     """
-    TaoHash Multi-Currency Miner implementation.
+    DogeLayer Multi-Currency Miner implementation.
 
     This miner supports merged mining for LTC, DOGE, and BTC,
     connecting to the subnet's pool and maintaining
@@ -28,7 +28,7 @@ class TaoHashMiner(BaseMiner):
 
     def __init__(self):
         """
-        Initialize the TaoHash miner with configuration and setup.
+        Initialize the DogeLayer miner with configuration and setup.
 
         Process:
             1. Perform base miner initialization
@@ -76,7 +76,7 @@ class TaoHashMiner(BaseMiner):
         return configured_addrs
 
     def add_args(self, parser: argparse.ArgumentParser):
-        """Add TaoHash-specific arguments to the parser."""
+        """Add DogeLayer-specific arguments to the parser."""
         super().add_args(parser)
 
         parser.add_argument(
@@ -100,15 +100,15 @@ class TaoHashMiner(BaseMiner):
         parser.add_argument(
             "--proxy_type",
             type=str,
-            choices=["taohash", "braiins"],
-            default=os.getenv("PROXY_TYPE", "taohash"),
-            help="Proxy type to use (taohash or braiins)",
+            choices=["dogelayer", "braiins"],
+            default=os.getenv("PROXY_TYPE", "dogelayer"),
+            help="Proxy type to use (dogelayer or braiins)",
         )
 
         args, _ = parser.parse_known_args()
         if hasattr(args, "proxy_type"):
-            if args.proxy_type == "taohash":
-                TaohashProxyManager.add_args(parser)
+            if args.proxy_type == "dogelayer":
+                DogeLayerProxyManager.add_args(parser)
             elif args.proxy_type == "braiins":
                 BraiinsProxyManager.add_args(parser)
 
@@ -251,5 +251,5 @@ class TaoHashMiner(BaseMiner):
 
 if __name__ == "__main__":
     load_dotenv()
-    miner = TaoHashMiner()
+    miner = DogeLayerMiner()
     miner.run()
