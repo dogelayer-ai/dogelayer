@@ -8,8 +8,6 @@ import os
 import traceback
 import time
 import sys
-import random
-import hashlib
 import logging as standard_logging  # 导入标准的 logging 库
 import numpy as np
 
@@ -352,87 +350,76 @@ class DogeLayerProxyValidator(BaseValidator):
             weights[self.burn_uid] += remaining
         return weights
 
-    def _get_commit_reveal_status(self) -> bool:
-        """使用 Bittensor SDK 查询 commit_reveal_weights_enabled 状态"""
-        try:
-            # 使用当前验证者的 subtensor 连接
-            hyperparams_obj = self.subtensor.get_subnet_hyperparameters(netuid=self.config.netuid)
-            
-            # 检查是否存在该属性
-            if hasattr(hyperparams_obj, 'commit_reveal_weights_enabled'):
-                param_value = getattr(hyperparams_obj, 'commit_reveal_weights_enabled')
-                logging.info(f"✅ 成功获取 commit_reveal_weights_enabled: {param_value}")
-                return bool(param_value)
-            else:
-                logging.warning("❌ 未在 SubnetHyperparameters 对象中找到 'commit_reveal_weights_enabled' 属性")
-                return False
+    # def _get_commit_reveal_status(self) -> bool:
+    #     """使用 Bittensor SDK 查询 commit_reveal_weights_enabled 状态"""
+    #     try:
+    #         # 使用当前验证者的 subtensor 连接
+    #         hyperparams_obj = self.subtensor.get_subnet_hyperparameters(netuid=self.config.netuid)
+    #         
+    #         # 检查是否存在该属性
+    #         if hasattr(hyperparams_obj, 'commit_reveal_weights_enabled'):
+    #             param_value = getattr(hyperparams_obj, 'commit_reveal_weights_enabled')
+    #             logging.info(f"✅ 成功获取 commit_reveal_weights_enabled: {param_value}")
+    #             return bool(param_value)
+    #         else:
+    #             logging.warning("❌ 未在 SubnetHyperparameters 对象中找到 'commit_reveal_weights_enabled' 属性")
+    #             return False
                 
-        except Exception as e:
-            logging.error(f"❌ 使用 SDK 查询超参数失败: {e}")
-            # 降级到原有的 btcli 命令方法
-            return self._get_commit_reveal_status_fallback()
 
-    def _get_commit_reveal_status_fallback(self) -> bool:
-        """备用方法：使用 btcli 命令获取状态"""
-        try:
-            import subprocess
-            import shutil
+    # def _get_commit_reveal_status_fallback(self) -> bool:
+    #     """
+    #     备用方法：使用 btcli 命令行查询子网超参数
+    #     """
+    #     try:
+    #         import subprocess
+    #         
+    #         # 构建 btcli 命令
+    #         cmd = [
+    #             'btcli', 'subnet', 'hyperparameters',
+    #             '--netuid', str(self.config.netuid),
+    #             '--subtensor.network', self.config.subtensor.network
+    #         ]
+    #         
+    #         logging.info(f"🔍 执行备用查询命令: {' '.join(cmd)}")
+    #         
+    #         # 执行命令并捕获输出
+    #         result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+    #         output = result.stdout
+    #         
+    #         for line in output.split('\n'):
+    #             if 'commit_reveal_weights_enabled' in line:
+    #                 parts = line.split()
+    #                 if len(parts) >= 2:
+    #                     value = parts[1].lower() == 'true'
+    #                     logging.info(f"✅ 备用方法获取到: {value}")
+    #                     return value
+    #         
+    #         logging.warning("❌ 备用方法未找到参数")
+    #         return False
+    #                         
             
-            netuid = str(self.config.netuid)
-            network = self.config.subtensor.network
-            
-            logging.debug(f"备用查询: netuid={netuid}, network={network}")
-            
-            btcli_path = shutil.which("btcli")
-            if not btcli_path:
-                cmd = [
-                    "python", "-m", "bittensor.btcli", "subnet", "hyperparameters",
-                    "--netuid", netuid,
-                    "--subtensor.chain_endpoint", network
-                ]
-            else:
-                cmd = [
-                    "btcli", "subnet", "hyperparameters",
-                    "--netuid", netuid,
-                    "--subtensor.chain_endpoint", network
-                ]
-            
-            result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-            output = result.stdout
-            
-            for line in output.split('\n'):
-                if 'commit_reveal_weights_enabled' in line:
-                    parts = line.split()
-                    if len(parts) >= 2:
-                        value = parts[1].lower() == 'true'
-                        logging.info(f"✅ 备用方法获取到: {value}")
-                        return value
-            
-            logging.warning("❌ 备用方法未找到参数")
-            return False
-                            
-        except Exception as e:
-            logging.error(f"❌ 备用方法也失败: {e}")
-            return False
+    #     except Exception as e:
+    #         logging.error(f"❌ 备用方法也失败: {e}")
+    #         return False
 
-    def get_hyperparameter_value(self, param_name: str):
-        """
-        通用方法：查询指定的子网超参数
-        """
-        try:
-            hyperparams_obj = self.subtensor.get_subnet_hyperparameters(netuid=self.config.netuid)
+    # def get_hyperparameter_value(self, param_name: str):
+    #     """
+    #     通用方法：查询指定的子网超参数
+    #     """
+    #     try:
+    #         hyperparams_obj = self.subtensor.get_subnet_hyperparameters(netuid=self.config.netuid)
+    #         
+    #         if hasattr(hyperparams_obj, param_name):
+    #             param_value = getattr(hyperparams_obj, param_name)
+    #             logging.info(f"✅ 成功获取 {param_name}: {param_value} (类型: {type(param_value)})")
+    #             return param_value
+    #         else:
+    #             logging.warning(f"❌ 未找到超参数: {param_name}")
+    #             return None
             
-            if hasattr(hyperparams_obj, param_name):
-                param_value = getattr(hyperparams_obj, param_name)
-                logging.info(f"✅ 成功获取 {param_name}: {param_value} (类型: {type(param_value)})")
-                return param_value
-            else:
-                logging.warning(f"❌ 未找到超参数: {param_name}")
-                return None
-                
-        except Exception as e:
-            logging.error(f"❌ 查询超参数 {param_name} 失败: {e}")
-            return None
+    #     except Exception as e:
+    #         logging.error(f"❌ 查询超参数 {param_name} 失败: {e}")
+    #         return None
 
     def set_weights(self) -> tuple[bool, str]:
         total_value = sum(self.scores)
@@ -443,17 +430,21 @@ class DogeLayerProxyValidator(BaseValidator):
         else:
             weights = self.calculate_weights_distribution(total_value)
 
-        # 检查是否启用了commit/reveal机制
-        commit_reveal_enabled = self._get_commit_reveal_status()
-        logging.info(f"🎯 commit_reveal_weights_enabled: {commit_reveal_enabled}")
+        # 注释掉 commit/reveal 机制，直接使用简单的权重提交
+        # commit_reveal_enabled = self._get_commit_reveal_status()
+        # logging.info(f"🎯 commit_reveal_weights_enabled: {commit_reveal_enabled}")
 
-        if commit_reveal_enabled:
-            return self._set_weights_with_commit_reveal(weights)
-        else:
-            return self._set_weights_direct(weights)
+        # if commit_reveal_enabled:
+        #     return self._set_weights_with_commit_reveal(weights)
+        # else:
+        #     return self._set_weights_direct(weights)
+        
+        # 直接使用简单的权重提交方式
+        return self._set_weights_direct(weights)
 
     def _set_weights_direct(self, weights: list[float]) -> tuple[bool, str]:
-        """直接设置权重（当commit/reveal机制禁用时）"""
+        """直接设置权重（使用简单的权重提交方式）"""
+        logging.info("Using direct weight submission (commit-reveal disabled)")
         logging.info(
             "Attempting to send set_weights transaction to Subtensor...")
 
@@ -478,162 +469,162 @@ class DogeLayerProxyValidator(BaseValidator):
             logging.error(f"Error from subtensor: {err_msg}")
             return False, err_msg
 
-    def _set_weights_with_commit_reveal(self, weights: list[float]) -> tuple[bool, str]:
-        """
-        使用 commit/reveal 机制设置权重。
-        注意：此方法假设 self.wallet, self.subtensor, self.config, self.hotkeys 等已在类中定义。
-        """
-        
-        # 所需的库已在文件开头导入：random, time, numpy, bittensor, logging
+    # def _set_weights_with_commit_reveal(self, weights: list[float]) -> tuple[bool, str]:
+    #     """
+    #     使用 commit/reveal 机制设置权重。
+    #     注意：此方法假设 self.wallet, self.subtensor, self.config, self.hotkeys 等已在类中定义。
+    #     """
+    #     
+    #     # 所需的库已在文件开头导入：random, time, numpy, bittensor, logging
 
-        # 如果 weights 列表为空，直接返回
-        if not weights:
-            logging.warning("Weights list is empty. Cannot set weights.")
-            return False, "Weights list is empty."
+    #     # 如果 weights 列表为空，直接返回
+    #     if not weights:
+    #         logging.warning("Weights list is empty. Cannot set weights.")
+    #         return False, "Weights list is empty."
 
-        uids = list(range(len(self.hotkeys)))
-        
-        # --- 步骤 1: 权重标准化 (L1 归一化) ---
-        weights_np = np.array(weights)
-        sum_weights = weights_np.sum()
-        
-        if sum_weights == 0:
-            logging.warning("Weights sum to zero. Cannot set weights.")
-            return False, "Weights sum is zero."
-            
-        # L1 归一化：所有权重加起来为 1.0
-        normalized_weights = (weights_np / sum_weights).tolist()
+    #     uids = list(range(len(self.hotkeys)))
+    #     
+    #     # --- 步骤 1: 权重标准化 (L1 归一化) ---
+    #     weights_np = np.array(weights)
+    #     sum_weights = weights_np.sum()
+    #     
+    #     if sum_weights == 0:
+    #         logging.warning("Weights sum to zero. Cannot set weights.")
+    #         return False, "Weights sum is zero."
+    #         
+    #     # L1 归一化：所有权重加起来为 1.0
+    #     normalized_weights = (weights_np / sum_weights).tolist()
 
-        # --- 步骤 2: 浮点转整数 U16 (保持归一化) ---
-        max_weight_u16 = 65535  # U16最大值
-        
-        # 先转换为整数，然后重新归一化以保持总和
-        temp_int_weights = []
-        for weight in normalized_weights:
-            int_weight = int(weight * max_weight_u16)
-            int_weight = max(0, min(int_weight, max_weight_u16))
-            temp_int_weights.append(int_weight)
-        
-        # 重新归一化整数权重，确保总和为 max_weight_u16
-        total_int_weights = sum(temp_int_weights)
-        if total_int_weights == 0:
-            # 如果所有权重都是0，给第一个权重分配全部
-            int_weights = [max_weight_u16] + [0] * (len(temp_int_weights) - 1)
-        else:
-            # 按比例调整，确保总和为 max_weight_u16
-            int_weights = []
-            remaining = max_weight_u16
-            for i, temp_weight in enumerate(temp_int_weights[:-1]):
-                adjusted_weight = int((temp_weight / total_int_weights) * max_weight_u16)
-                int_weights.append(adjusted_weight)
-                remaining -= adjusted_weight
-            # 最后一个权重获得剩余部分，确保总和精确
-            int_weights.append(remaining)
-        
-        logging.info(f"Converted weights (Normalized -> Int U16): {normalized_weights[:5]}... -> {int_weights[:5]}...")
+    #     # --- 步骤 2: 浮点转整数 U16 (保持归一化) ---
+    #     max_weight_u16 = 65535  # U16最大值
+    #     
+    #     # 先转换为整数，然后重新归一化以保持总和
+    #     temp_int_weights = []
+    #     for weight in normalized_weights:
+    #         int_weight = int(weight * max_weight_u16)
+    #         int_weight = max(0, min(int_weight, max_weight_u16))
+    #         temp_int_weights.append(int_weight)
+    #     
+    #     # 重新归一化整数权重，确保总和为 max_weight_u16
+    #     total_int_weights = sum(temp_int_weights)
+    #     if total_int_weights == 0:
+    #         # 如果所有权重都是0，给第一个权重分配全部
+    #         int_weights = [max_weight_u16] + [0] * (len(temp_int_weights) - 1)
+    #     else:
+    #         # 按比例调整，确保总和为 max_weight_u16
+    #         int_weights = []
+    #         remaining = max_weight_u16
+    #         for i, temp_weight in enumerate(temp_int_weights[:-1]):
+    #             adjusted_weight = int((temp_weight / total_int_weights) * max_weight_u16)
+    #             int_weights.append(adjusted_weight)
+    #             remaining -= adjusted_weight
+    #         # 最后一个权重获得剩余部分，确保总和精确
+    #         int_weights.append(remaining)
+    #     
+    #     logging.info(f"Converted weights (Normalized -> Int U16): {normalized_weights[:5]}... -> {int_weights[:5]}...")
 
-        # --- 步骤 3: 准备 Commitment 数据 ---
-        salt = random.randint(0, 2**32 - 1)
-        
-        # **【关键修正】**：计算 Commitment 哈希值
-        # 尝试从最可能的路径导入 hash_weights 函数
-        hash_weights_func = None
-        try:
-            from bittensor.utils.weight_utils import hash_weights
-            hash_weights_func = hash_weights
-            logging.info("✅ 从 bittensor.utils.weight_utils 导入 hash_weights 成功")
-        except ImportError as e1:
-            logging.warning(f"从 bittensor.utils.weight_utils 导入失败: {e1}")
-            try:
-                from bittensor.utils import hash_weights
-                hash_weights_func = hash_weights
-                logging.info("✅ 从 bittensor.utils 导入 hash_weights 成功")
-            except ImportError as e2:
-                logging.warning(f"从 bittensor.utils 导入失败: {e2}")
-                try:
-                    # 尝试其他可能的路径
-                    from bittensor import hash_weights
-                    hash_weights_func = hash_weights
-                    logging.info("✅ 从 bittensor 直接导入 hash_weights 成功")
-                except ImportError as e3:
-                    logging.error(f"无法从任何路径导入 hash_weights: {e1}, {e2}, {e3}")
-                    return False, "Hash utility not found."
-        
-        # 使用导入的 hash_weights 函数计算哈希
-        try:
-            commitment_hash = hash_weights_func(
-                uids=uids, 
-                weights=int_weights,  # 使用整数权重
-                salt=salt
-            )
-            logging.info("✅ 使用 hash_weights 函数计算哈希成功")
-        except Exception as e:
-            logging.error(f"hash_weights 函数调用失败: {e}")
-            # 备选方案：手动计算哈希
-            try:
-                data_str = f"{uids}{int_weights}{salt}{VERSION_KEY}"
-                commitment_hash = hashlib.sha256(data_str.encode()).hexdigest()
-                logging.info("✅ 使用备选手动哈希计算成功")
-            except Exception as e_manual:
-                logging.error(f"备选哈希计算也失败: {e_manual}")
-                return False, "Hash calculation failed."
+    #     # --- 步骤 3: 准备 Commitment 数据 ---
+    #     salt = random.randint(0, 2**32 - 1)
+    #     
+    #     # **【关键修正】**：计算 Commitment 哈希值
+    #     # 尝试从最可能的路径导入 hash_weights 函数
+    #     hash_weights_func = None
+    #     try:
+    #         from bittensor.utils.weight_utils import hash_weights
+    #         hash_weights_func = hash_weights
+    #         logging.info("✅ 从 bittensor.utils.weight_utils 导入 hash_weights 成功")
+    #     except ImportError as e1:
+    #         logging.warning(f"从 bittensor.utils.weight_utils 导入失败: {e1}")
+    #         try:
+    #             from bittensor.utils import hash_weights
+    #             hash_weights_func = hash_weights
+    #             logging.info("✅ 从 bittensor.utils 导入 hash_weights 成功")
+    #         except ImportError as e2:
+    #             logging.warning(f"从 bittensor.utils 导入失败: {e2}")
+    #             try:
+    #                 # 尝试其他可能的路径
+    #                 from bittensor import hash_weights
+    #                 hash_weights_func = hash_weights
+    #                 logging.info("✅ 从 bittensor 直接导入 hash_weights 成功")
+    #             except ImportError as e3:
+    #                 logging.error(f"无法从任何路径导入 hash_weights: {e1}, {e2}, {e3}")
+    #                 return False, "Hash utility not found."
+    #     
+    #     # 使用导入的 hash_weights 函数计算哈希
+    #     try:
+    #         commitment_hash = hash_weights_func(
+    #             uids=uids, 
+    #             weights=int_weights,  # 使用整数权重
+    #             salt=salt
+    #         )
+    #         logging.info("✅ 使用 hash_weights 函数计算哈希成功")
+    #     except Exception as e:
+    #         logging.error(f"hash_weights 函数调用失败: {e}")
+    #         # 备选方案：手动计算哈希
+    #         try:
+    #             data_str = f"{uids}{int_weights}{salt}{VERSION_KEY}"
+    #             commitment_hash = hashlib.sha256(data_str.encode()).hexdigest()
+    #             logging.info("✅ 使用备选手动哈希计算成功")
+    #         except Exception as e_manual:
+    #             logging.error(f"备选哈希计算也失败: {e_manual}")
+    #             return False, "Hash calculation failed."
 
-        logging.info("Starting commit-reveal weight submission...")
-        logging.info(f"Generated salt: {salt}, Commitment Hash: {commitment_hash}")
+    #     logging.info("Starting commit-reveal weight submission...")
+    #     logging.info(f"Generated salt: {salt}, Commitment Hash: {commitment_hash}")
 
-        # --- Phase 1: Commit 阶段 ---
-        logging.info("Phase 1: Committing weights hash...")
-        
-        # **【关键修正】**：提交 Commitment 哈希值
-        commit_result = self.subtensor.commit_weights(
-            netuid=self.config.netuid,
-            wallet=self.wallet,
-            commitment=commitment_hash # 提交计算出的哈希值
-        )
+    #     # --- Phase 1: Commit 阶段 ---
+    #     logging.info("Phase 1: Committing weights hash...")
+    #     
+    #     # **【关键修正】**：提交 Commitment 哈希值
+    #     commit_result = self.subtensor.commit_weights(
+    #         netuid=self.config.netuid,
+    #         wallet=self.wallet,
+    #         commitment=commitment_hash # 提交计算出的哈希值
+    #     )
 
-        if not commit_result[0]:
-            logging.error(f"Commit phase failed: {commit_result[1]}")
-            return False, commit_result[1]
+    #     if not commit_result[0]:
+    #         logging.error(f"Commit phase failed: {commit_result[1]}")
+    #         return False, commit_result[1]
 
-        logging.info("Commit phase successful!")
+    #     logging.info("Commit phase successful!")
 
-        # --- Phase 2: 等待和 Reveal 阶段 ---
-        
-        # 等待 Commit 交易被打包（至少一个区块时间）
-        logging.info("Waiting for Commit transaction inclusion and next block...")
-        time.sleep(12) 
-        
-        # 警告：如果您的子网要求等待一个完整的 Tempo 周期，请将 time.sleep(12) 替换为更长的等待逻辑。
-        
-        logging.info("Phase 2: Revealing weights...")
-        reveal_result = self.subtensor.reveal_weights(
-            netuid=self.config.netuid,
-            wallet=self.wallet,
-            uids=uids,
-            weights=int_weights,  # 提交原始整数权重和 Salt
-            salt=salt
-        )
+    #     # --- Phase 2: 等待和 Reveal 阶段 ---
+    #     
+    #     # 等待 Commit 交易被打包（至少一个区块时间）
+    #     logging.info("Waiting for Commit transaction inclusion and next block...")
+    #     time.sleep(12) 
+    #     
+    #     # 警告：如果您的子网要求等待一个完整的 Tempo 周期，请将 time.sleep(12) 替换为更长的等待逻辑。
+    #     
+    #     logging.info("Phase 2: Revealing weights...")
+    #     reveal_result = self.subtensor.reveal_weights(
+    #         netuid=self.config.netuid,
+    #         wallet=self.wallet,
+    #         uids=uids,
+    #         weights=int_weights,  # 提交原始整数权重和 Salt
+    #         salt=salt
+    #     )
 
-        if reveal_result[0]:
-            # **【日志修正】**：使用 logging.info 代替 logging.success
-            logging.info(
-                "Successfully completed commit-reveal weight submission!")
-            
-            # 将整数权重转换回浮点格式用于日志显示 (注意：这里使用 normalized_weights 即可，因为它们是 L1 归一化的)
-            # self._log_weights_and_scores(normalized_weights) 
-            
-            # 假设这些属性存在于您的类中
-            if hasattr(self, '_log_weights_and_scores'):
-                 self._log_weights_and_scores(normalized_weights) 
-            if hasattr(self, 'current_block'):
-                 self.last_update = self.current_block
-            if hasattr(self, 'scores'):
-                 self.scores = [0.0] * len(self.hotkeys)
-                 
-            return True, reveal_result[1]
-        else:
-            logging.error(f"Reveal phase failed: {reveal_result[1]}")
-            return False, reveal_result[1]
+    #     if reveal_result[0]:
+    #         # **【日志修正】**：使用 logging.info 代替 logging.success
+    #         logging.info(
+    #             "Successfully completed commit-reveal weight submission!")
+    #         
+    #         # 将整数权重转换回浮点格式用于日志显示 (注意：这里使用 normalized_weights 即可，因为它们是 L1 归一化的)
+    #         # self._log_weights_and_scores(normalized_weights) 
+    #         
+    #         # 假设这些属性存在于您的类中
+    #         if hasattr(self, '_log_weights_and_scores'):
+    #              self._log_weights_and_scores(normalized_weights) 
+    #         if hasattr(self, 'current_block'):
+    #              self.last_update = self.current_block
+    #         if hasattr(self, 'scores'):
+    #              self.scores = [0.0] * len(self.hotkeys)
+    #              
+    #         return True, reveal_result[1]
+    #     else:
+    #         logging.error(f"Reveal phase failed: {reveal_result[1]}")
+    #         return False, reveal_result[1]
 
     def run(self):
         if self.config.state == "restore":
