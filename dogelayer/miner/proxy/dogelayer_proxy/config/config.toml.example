@@ -2,9 +2,16 @@
 
 # Normal difficulty pool
 [pools.normal]
-host = "ltc.f2pool.com"
-port = 8888
-user = "your_f2pool_username.dogelayer"
+host = "stratum.braiins.com"
+port = 3333
+user = "latent-to.worker"
 pass = "x"
 proxy_port = 3331
 
+# High difficulty pool
+[pools.high_diff]
+host = "stratum.braiins.com"
+port = 3333
+user = "latent-to.worker"
+pass = "anything123"
+proxy_port = 3332
