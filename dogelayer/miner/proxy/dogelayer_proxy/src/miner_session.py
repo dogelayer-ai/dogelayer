@@ -79,6 +79,33 @@ class MinerSession:
             return parts[-1]
         return self.stats.worker_name
 
+    def _extract_worker_id(self, username: str) -> str:
+        """
+        从矿工 username 中提取 workerId (F2Pool 动态 worker 标识)
+        
+        格式示例：
+        - LTC9x8y7z6-D7A6B5C4D3-bc1qhstt99.5EUZxZ94 → 5EUZxZ94
+        - address1-address2-address3.workerId → workerId
+        
+        Args:
+            username: 矿工发送的完整 username
+            
+        Returns:
+            str: 提取的 workerId，如果没有找到则返回空字符串
+        """
+        if not username:
+            return ""
+        
+        # 按点号分割，取最后一部分作为 workerId
+        parts = username.split(".")
+        if len(parts) > 1:
+            worker_id = parts[-1].strip()
+            logger.debug(f"[{self.miner_id}] Extracted worker_id '{worker_id}' from username '{username}'")
+            return worker_id
+        
+        logger.debug(f"[{self.miner_id}] ⚠️  No workerId found in username '{username}' (no dot separator)")
+        return ""
+
     def __init__(
         self,
         miner_reader: asyncio.StreamReader,
@@ -110,6 +137,10 @@ class MinerSession:
         self.pool_pass = pool_pass
         self.pool_label = pool_label
         self.min_difficulty: Optional[int] = None
+        
+        # ✅ 新增：用于存储带 workerId 的完整 pool username (F2Pool 动态 worker)
+        # 默认使用基础 username，在 authorize 时如果检测到 workerId 则动态添加
+        self.pool_user_with_worker = pool_user
 
         self.peer = miner_writer.get_extra_info("peername")
         self.miner_id = f"{self.peer[0]}:{self.peer[1]}" if self.peer else "unknown"
@@ -799,6 +830,7 @@ class MinerSession:
             msg_id: Request ID for response
 
         Extracts min difficulty from password field (md=X format).
+        Extracts workerId from username for F2Pool dynamic worker identification.
         Always returns success, then sends initial work.
         """
         params = message.get("params", [])
@@ -818,9 +850,26 @@ class MinerSession:
                 f"[{self.miner_id}] Set min_difficulty={min_diff} from password"
             )
 
+        # ✅ 新增：提取 workerId 并构建完整的 pool username (F2Pool 动态 worker)
+        worker_id = self._extract_worker_id(username)
+        
+        # 保存原始 username 用于显示和统计
         self.stats.worker_name = username
+        
+        # 构建发送给 F2Pool 的完整 username
+        if worker_id:
+            # 格式：your_f2pool_username.dogelayer.{workerId}
+            self.pool_user_with_worker = f"{self.pool_user}.{worker_id}"
+            logger.info(f"[{self.miner_id}] ✅ Extracted workerId: {worker_id}")
+            logger.info(f"[{self.miner_id}] 🔄 Will use pool username: {self.pool_user_with_worker}")
+        else:
+            # 没有 workerId，使用基础 pool username
+            self.pool_user_with_worker = self.pool_user
+            logger.warning(f"[{self.miner_id}] ⚠️  No workerId found, using base pool username: {self.pool_user}")
+        
         if self.pool_label:
             self.stats.pool_type = self.pool_label
+            
         logger.info(f"[{self.miner_id}] Miner authorized with username: {username}")
         await self._send_to_miner({"id": msg_id, "result": True, "error": None})
         await self.state_machine.transition_to(MinerState.AUTHORIZED)
@@ -901,8 +950,9 @@ class MinerSession:
             "pool_difficulty": self.stats.difficulty,
         }
 
-        # Forward to pool with pool username
-        message["params"][0] = self.pool_user
+        # ✅ 修改：使用带 workerId 的完整 username 转发给 F2Pool
+        # 格式：your_f2pool_username.dogelayer.{workerId}
+        message["params"][0] = self.pool_user_with_worker
         await self._send_to_pool(message)
 
     async def _send_to_miner(self, stratum_message: dict[str, Any]):
