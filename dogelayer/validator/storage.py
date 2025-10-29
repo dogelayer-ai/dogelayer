@@ -32,35 +32,35 @@ class JsonValidatorStorage(BaseJsonStorage):
         self.save_data(key="current", data=state, prefix=prefix)
         logging.debug(f"Saved validator state at block {state['current_block']}")
         
-        # 额外提交到统一数据库
-        if self.submit_to_db:
-            logging.info(f"🔄 准备提交验证者信息到数据库: {self.proxy_api_url}")
-            # 使用线程池执行器运行异步任务
-            def run_async_tasks():
-                try:
-                    loop = asyncio.new_event_loop()
-                    asyncio.set_event_loop(loop)
-                    
-                    # 并行提交验证者信息和矿工评分
-                    miner_scores = self._extract_miner_scores(state)
-                    logging.info(f"🔄 准备提交矿工评分数据: {len(miner_scores)} 条记录")
-                    
-                    # 使用asyncio.gather并行执行
-                    loop.run_until_complete(asyncio.gather(
-                        self._submit_validator_info(state),
-                        self._submit_miner_scores(miner_scores),
-                        return_exceptions=True
-                    ))
-                    
-                except Exception as e:
-                    logging.error(f"异步提交任务失败: {e}")
-                finally:
-                    loop.close()
-            
-            # 使用线程池提交任务
-            self.executor.submit(run_async_tasks)
-        else:
-            logging.warning("⚠️ submit_to_db 配置为 False，跳过数据库提交")
+        # 额外提交到统一数据库 - 已移至主循环定时提交，此处注释掉
+        # if self.submit_to_db:
+        #     logging.info(f"🔄 准备提交验证者信息到数据库: {self.proxy_api_url}")
+        #     # 使用线程池执行器运行异步任务
+        #     def run_async_tasks():
+        #         try:
+        #             loop = asyncio.new_event_loop()
+        #             asyncio.set_event_loop(loop)
+        #             
+        #             # 并行提交验证者信息和矿工评分
+        #             miner_scores = self._extract_miner_scores(state)
+        #             logging.info(f"🔄 准备提交矿工评分数据: {len(miner_scores)} 条记录")
+        #             
+        #             # 使用asyncio.gather并行执行
+        #             loop.run_until_complete(asyncio.gather(
+        #                 self._submit_validator_info(state),
+        #                 self._submit_miner_scores(miner_scores),
+        #                 return_exceptions=True
+        #             ))
+        #             
+        #         except Exception as e:
+        #             logging.error(f"异步提交任务失败: {e}")
+        #         finally:
+        #             loop.close()
+        #     
+        #     # 使用线程池提交任务
+        #     self.executor.submit(run_async_tasks)
+        # else:
+        #     logging.warning("⚠️ submit_to_db 配置为 False，跳过数据库提交")
 
     def load_latest_state(self) -> dict:
         """Load the latest saved validator state."""
@@ -121,7 +121,13 @@ class JsonValidatorStorage(BaseJsonStorage):
             "scores": state.get("scores", []),
             "weights": state.get("weights", []),
             "timestamp": datetime.now().isoformat(),
-            "validator_version": state.get("version", "unknown")
+            "validator_version": state.get("version", "unknown"),
+            
+            # 系统监控信息
+            "cpu_usage": state.get("cpu_usage", 0.0),
+            "memory_usage": state.get("memory_usage", 0.0),
+            "disk_usage": state.get("disk_usage", 0.0),
+            "network_latency": state.get("network_latency", 0.0)
         }
     
     def _extract_miner_scores(self, state: dict) -> list:
@@ -194,35 +200,35 @@ class RedisValidatorStorage(BaseRedisStorage):
         prefix = f"{self.validator_id}_state"
         self.save_data(key="current", data=state, prefix=prefix)
         
-        # 额外提交到统一数据库
-        if self.submit_to_db:
-            logging.info(f"🔄 准备提交验证者信息到数据库: {self.proxy_api_url}")
-            # 使用线程池执行器运行异步任务
-            def run_async_tasks():
-                try:
-                    loop = asyncio.new_event_loop()
-                    asyncio.set_event_loop(loop)
-                    
-                    # 并行提交验证者信息和矿工评分
-                    miner_scores = self._extract_miner_scores(state)
-                    logging.info(f"🔄 准备提交矿工评分数据: {len(miner_scores)} 条记录")
-                    
-                    # 使用asyncio.gather并行执行
-                    loop.run_until_complete(asyncio.gather(
-                        self._submit_validator_info(state),
-                        self._submit_miner_scores(miner_scores),
-                        return_exceptions=True
-                    ))
-                    
-                except Exception as e:
-                    logging.error(f"异步提交任务失败: {e}")
-                finally:
-                    loop.close()
-            
-            # 使用线程池提交任务
-            self.executor.submit(run_async_tasks)
-        else:
-            logging.warning("⚠️ submit_to_db 配置为 False，跳过数据库提交")
+        # 额外提交到统一数据库 - 已移至主循环定时提交，此处注释掉
+        # if self.submit_to_db:
+        #     logging.info(f"🔄 准备提交验证者信息到数据库: {self.proxy_api_url}")
+        #     # 使用线程池执行器运行异步任务
+        #     def run_async_tasks():
+        #         try:
+        #             loop = asyncio.new_event_loop()
+        #             asyncio.set_event_loop(loop)
+        #             
+        #             # 并行提交验证者信息和矿工评分
+        #             miner_scores = self._extract_miner_scores(state)
+        #             logging.info(f"🔄 准备提交矿工评分数据: {len(miner_scores)} 条记录")
+        #             
+        #             # 使用asyncio.gather并行执行
+        #             loop.run_until_complete(asyncio.gather(
+        #                 self._submit_validator_info(state),
+        #                 self._submit_miner_scores(miner_scores),
+        #                 return_exceptions=True
+        #             ))
+        #             
+        #         except Exception as e:
+        #             logging.error(f"异步提交任务失败: {e}")
+        #         finally:
+        #             loop.close()
+        #     
+        #     # 使用线程池提交任务
+        #     self.executor.submit(run_async_tasks)
+        # else:
+        #     logging.warning("⚠️ submit_to_db 配置为 False，跳过数据库提交")
 
     def load_latest_state(self) -> dict:
         """Get validator state for specific block."""
@@ -268,7 +274,13 @@ class RedisValidatorStorage(BaseRedisStorage):
             "scores": state.get("scores", []),
             "weights": state.get("weights", []),
             "timestamp": datetime.now().isoformat(),
-            "validator_version": state.get("version", "unknown")
+            "validator_version": state.get("version", "unknown"),
+            
+            # 系统监控信息
+            "cpu_usage": state.get("cpu_usage", 0.0),
+            "memory_usage": state.get("memory_usage", 0.0),
+            "disk_usage": state.get("disk_usage", 0.0),
+            "network_latency": state.get("network_latency", 0.0)
         }
     
     def _extract_miner_scores(self, state: dict) -> list:

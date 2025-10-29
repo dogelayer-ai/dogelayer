@@ -8,8 +8,10 @@ import os
 import traceback
 import time
 import sys
-import logging as standard_logging  # 导入标准的 logging 库
-import numpy as np
+import logging as standard_logging  # 
+import threading
+import asyncio
+import psutil
 
 from tabulate import tabulate
 
@@ -68,6 +70,11 @@ class DogeLayerProxyValidator(BaseValidator):
         self.eval_interval = self.tempo * 2     # 减少评估频率降低API压力
         self.config.coins = [COIN]
         self.last_evaluation_timestamp = None
+        
+        # 定时提交配置
+        self.submit_to_db = os.getenv('SUBMIT_VALIDATOR_INFO', 'true').lower() == 'true'
+        self.submit_interval = int(os.getenv('DB_SUBMIT_INTERVAL_SECONDS', '300'))  # 默认5分钟
+        self.last_submit_timestamp = None
 
     def add_args(self, parser: argparse.ArgumentParser):
         super().add_args(parser)
@@ -651,6 +658,43 @@ class DogeLayerProxyValidator(BaseValidator):
                     blocks_since_last_weights = self.subtensor.blocks_since_last_update(
                         self.config.netuid, self.uid
                     )
+                    # 检查是否需要定时提交验证者信息
+                    if self.submit_to_db:
+                        current_time = int(time.time())
+                        if (self.last_submit_timestamp is None or 
+                            current_time - self.last_submit_timestamp >= self.submit_interval):
+                            
+                            logging.info(f"定时提交验证者信息到数据库")
+                            try:
+                                # 构造当前状态
+                                current_state = {
+                                    "scores": self.scores,
+                                    "hotkeys": self.hotkeys,
+                                    "block_at_registration": self.block_at_registration,
+                                    "current_block": self.current_block,
+                                    "hotkey": self.wallet.hotkey.ss58_address if self.wallet and self.wallet.hotkey else "",
+                                    "coldkey": self.wallet.coldkeypub.ss58_address if self.wallet and self.wallet.coldkeypub else "",
+                                    "uid": self.uid if hasattr(self, 'uid') else 0,
+                                    "netuid": self.config.netuid,
+                                    "validator_stake": self.metagraph.total_stake[self.uid].tao if hasattr(self, 'metagraph') and hasattr(self, 'uid') and self.uid < len(self.metagraph.total_stake) else 0.0,
+                                    "last_update": self.last_evaluation_timestamp,
+                                    "version": "1.0.0",
+                                    
+                                    # 系统监控信息
+                                    "cpu_usage": psutil.cpu_percent(interval=1),
+                                    "memory_usage": psutil.virtual_memory().percent,
+                                    "disk_usage": psutil.disk_usage('/').percent if hasattr(psutil, 'disk_usage') else 0.0,
+                                    "network_latency": 0.0,  # 暂时设为0，后续可以实现网络延迟检测
+                                    "timestamp": current_time
+                                }
+                                
+                                # 异步调用提交方法
+                                asyncio.run(self.storage._submit_validator_info(current_state))
+                                self.last_submit_timestamp = current_time
+                                logging.info(f"验证者信息提交成功")
+                            except Exception as e:
+                                logging.error(f"❌ 验证者信息提交失败: {e}")
+
                     if blocks_since_last_weights >= self.weights_interval:
                         success, err_msg = self.set_weights()
                         if not success:
