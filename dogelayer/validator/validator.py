@@ -75,13 +75,10 @@ class DogeLayerProxyValidator(BaseValidator):
         
         # 评估间隔：针对小tempo做特殊处理
         if self.tempo < 50:
-            # 小tempo（如私链tempo=10）：使用固定的较大间隔避免频繁查询
-            # 官方使用固定25区块，但对于小tempo我们需要更大的间隔
-            self.eval_interval = max(25, self.tempo * 30)  # 至少25区块，或30倍tempo
+            # 小tempo（如私链tempo=10）：使用较大间隔避免频繁查询
+            # 正常tempo（如主网tempo=360）：使用从config读取的默认值（25区块）
+            self.eval_interval = max(self.config.eval_interval, self.tempo * 30)
             logging.info(f"⚠️ 检测到小tempo({self.tempo})，使用较大的eval_interval避免频繁查询")
-        else:
-            # 正常tempo（如主网tempo=360）：使用官方的固定间隔
-            self.eval_interval = 25  # 与官方保持一致：固定25区块
         
         logging.info(f"📊 间隔配置: tempo={self.tempo}, "
                     f"eval_interval={self.eval_interval}区块({self.eval_interval*12/60:.1f}分钟), "
