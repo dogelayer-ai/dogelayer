@@ -174,17 +174,12 @@ LOGGING_LEVEL=info
 2. **Ensure your wallet is accessible**  
    Make sure your Bittensor wallet is in `~/.bittensor/wallets/`
 
-3. **Create necessary directories**
-   ```bash
-   mkdir -p data config
-   ```
-
-4. **Start the validator**
+3. **Start the validator**
    ```bash
    docker compose down && docker compose pull && docker compose up -d && docker compose logs -f
    ```
 
-5. **Verify it's running**  
+4. **Verify it's running**  
    The validator should start and you should see info logs showing it's scoring miners.
 
 
