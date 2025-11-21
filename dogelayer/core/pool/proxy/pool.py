@@ -25,8 +25,7 @@ class ProxyPool(PoolBase):
 
     @staticmethod
     def _get_worker_id_for_hotkey(hotkey: str) -> str:
-        """Convert hotkey to worker ID - use full hotkey for DogeLayer"""
-        return hotkey
+        return hotkey[:4] + hotkey[-4:]
 
     def get_hotkey_contribution(
         self, hotkey: str, coin: str = "litecoin"
@@ -50,17 +49,15 @@ class ProxyPool(PoolBase):
         Args:
             start_time: Start time as unix timestamp (required)
             end_time: End time as unix timestamp (required)
-            coin: The coin type (default: "litecoin")
 
         Returns:
             Dictionary mapping hotkeys to their contribution metrics for the time range
         """
-        result = self.api.get_workers_timerange(start_time, end_time, coin)
-        workers = result.get("workers", {})
+        all_workers = self.api.get_workers_timerange(start_time, end_time, coin)
         logging.info(
-            f"Retrieved timerange data for {len(workers)} workers from proxy"
+            f"Retrieved timerange data for {len(all_workers)} workers from proxy"
         )
-        return workers
+        return all_workers
 
     @classmethod
     def create_api(cls, config: PoolAPIConfig) -> ProxyPoolAPI:

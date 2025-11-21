@@ -1,4 +1,3 @@
-import base64
 import httpx
 from typing import Optional, Any
 from backoff import on_exception, expo
@@ -6,8 +5,7 @@ from ratelimit import limits, RateLimitException
 
 from bittensor import logging
 
-from dogelayer.core.pool.api import PoolAPI
-from dogelayer.core.constants import PAYOUT_FACTOR
+from dogelayer.core.pool.pool import PoolAPI
 
 
 class ProxyPoolConnectionError(Exception):
@@ -43,27 +41,27 @@ class ProxyPoolAPI(PoolAPI):
 
     @staticmethod
     def _worker_name_to_worker_id(worker_name: str) -> str:
-        splits = worker_name.split(".")
+        splits = worker_name.split(".", maxsplit=1)
         if len(splits) == 1:  # no period
             return splits[0]
         else:
-            return splits[-1]  # Take the worker_id after the last dot
+            return splits[1]
 
     @on_exception(
         expo,
         (RateLimitException, httpx.RequestError, httpx.HTTPStatusError),
         max_tries=5,
     )
-    @limits(calls=1, period=2)
+    @limits(calls=1, period=5)  # Increase to 5 second interval to reduce API call frequency
     def get_worker_data(
-        self, worker_id: str, coin: str = "litecoin"
+        self, worker_id: str, coin: str = "doge"
     ) -> Optional[dict[str, Any]]:
         """
         Get worker data from the proxy API.
 
         Args:
             worker_id: The worker ID (hotkey)
-            coin: The coin type (default: "litecoin")
+            coin: The coin type (default: "doge")
 
         Returns:
             Worker data dict with hash_rate_5m, hash_rate_60m, shares_5m, shares_60m
@@ -77,10 +75,12 @@ class ProxyPoolAPI(PoolAPI):
 
             data = response.json()
 
-            workers = data.get("ltc", {}).get("workers", {})
+            # For LTC+DOGE merged mining, always use doge as primary pool for share data
+            workers = data.get("doge", {}).get("workers", {})
 
             if worker_id not in workers:
-                logging.debug(f"Worker {worker_id} not found in proxy response")
+                logging.debug(
+                    f"Worker {worker_id} not found in proxy response")
                 return None
 
             worker_data = workers[self._worker_name_to_worker_id(worker_id)]
@@ -101,13 +101,13 @@ class ProxyPoolAPI(PoolAPI):
         (RateLimitException, httpx.RequestError, httpx.HTTPStatusError),
         max_tries=5,
     )
-    @limits(calls=1, period=2)
-    def get_all_workers_data(self, coin: str = "litecoin") -> dict[str, dict[str, Any]]:
+    @limits(calls=1, period=10)  # Increase to 10 second interval to reduce API call frequency and avoid rate limiting
+    def get_all_workers_data(self, coin: str = "doge") -> dict[str, dict[str, Any]]:
         """
         Get data for all workers from the proxy API.
 
         Args:
-            coin: The coin type (default: "litecoin")
+            coin: The coin type (default: "doge")
 
         Returns:
             Dict mapping worker_id to worker data
@@ -120,7 +120,8 @@ class ProxyPoolAPI(PoolAPI):
 
             data = response.json()
 
-            workers = data.get("ltc", {}).get("workers", {})
+            # For LTC+DOGE merged mining, always use doge as primary pool for share data
+            workers = data.get("doge", {}).get("workers", {})
 
             result = {}
             for worker_id, worker_data in workers.items():
@@ -142,20 +143,20 @@ class ProxyPoolAPI(PoolAPI):
         (RateLimitException, httpx.RequestError, httpx.HTTPStatusError),
         max_tries=5,
     )
-    @limits(calls=1, period=2)
+    @limits(calls=1, period=10)  # Increase to 10 second interval to reduce API call frequency and avoid rate limiting
     def get_workers_timerange(
         self, start_time: int, end_time: int, coin: str = "litecoin"
-    ) -> dict[str, Any]:
+    ) -> dict[str, dict[str, Any]]:
         """
         Get worker data for a specific time range.
 
         Args:
             start_time: Start time as unix timestamp (required)
             end_time: End time as unix timestamp (required)
-            coin: The coin type (default: "litecoin")
+            coin: The coin type (default: "bitcoin")
 
         Returns:
-            Dict containing workers data and payout factor
+            Dict mapping worker_id to worker timerange data
         """
         url = f"{self.proxy_url}/api/workers/timerange"
         params = {"start_time": start_time, "end_time": end_time}
@@ -165,15 +166,33 @@ class ProxyPoolAPI(PoolAPI):
             response.raise_for_status()
 
             data = response.json()
-            payout_factor = data.get("ltc", {}).get("worker_percentage", PAYOUT_FACTOR)
 
-            workers = data.get("ltc", {}).get("workers", {})
+            # Add detailed API response logging
+            import logging
+            logging.info(f"Proxy pool API raw response data structure: {data}")
+            logging.info(
+                f"Coins in API response: {list(data.keys()) if isinstance(data, dict) else 'Not a dict'}")
 
-            worker_result = {}
+            if isinstance(data, dict) and "litecoin" in data:
+                litecoin_data = data["litecoin"]
+                logging.info(f"Litecoin data structure: {litecoin_data}")
+                if "workers" in litecoin_data:
+                    workers_data = litecoin_data["workers"]
+                    logging.info(f"Workers count: {len(workers_data)}")
+                    # Print detailed data for first 3 workers
+                    for i, (worker_id, worker_data) in enumerate(workers_data.items()):
+                        if i < 3:
+                            logging.info(
+                                f"Worker {worker_id} raw data: {worker_data}")
+
+            # For LTC+DOGE merged mining, always use litecoin as primary pool for share data
+            workers = data.get("btc", {}).get("workers", {})
+
+            result = {}
             for worker_id, worker_data in workers.items():
-                worker_result[self._worker_name_to_worker_id(worker_id)] = worker_data
+                result[self._worker_name_to_worker_id(worker_id)] = worker_data
 
-            return {"workers": worker_result, "payout_factor": payout_factor}
+            return result
 
     def get_fpps(self, coin: str = "litecoin") -> float:
         """
@@ -184,20 +203,6 @@ class ProxyPoolAPI(PoolAPI):
         """
         # Proxy doesn't provide FPPS directly
         return 0.0
-
-    @staticmethod
-    def encode_lightning_address(ln_addr: str) -> str:
-        """
-        Encode a Lightning address into URL-safe Base64.
-        """
-        return base64.urlsafe_b64encode(ln_addr.encode("utf-8")).decode("utf-8")
-
-    @staticmethod
-    def decode_lightning_address(encoded: str) -> str:
-        """
-        Decode a URL-safe Base64 string back into the original Lightning address.
-        """
-        return base64.urlsafe_b64decode(encoded.encode("utf-8")).decode("utf-8")
 
     def test_connection(self) -> bool:
         """Test API connection and authentication by hitting the /health endpoint"""

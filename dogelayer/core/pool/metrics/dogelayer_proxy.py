@@ -85,26 +85,47 @@ def get_metrics_timerange(
     metrics = []
     all_workers = pool.get_miner_contributions_timerange(start_time, end_time, coin)
 
+    import logging
+    logging.info(f"Retrieved {len(all_workers)} workers from pool API")
+    if all_workers:
+        # Show sample worker IDs to help debug format
+        sample_keys = list(all_workers.keys())[:3]
+        logging.info(f"Sample worker IDs: {sample_keys}")
+
     hotkeys_to_workers = {}
     worker_ids_to_hotkey_idx = {}
 
+    # Build mapping: try both full hotkey and shortened format
     for i, hotkey in enumerate(hotkeys):
-        worker_id = pool._get_worker_id_for_hotkey(hotkey)
+        # Try to find worker in pool data using different formats
+        worker_id = None
 
-        if worker_id in worker_ids_to_hotkey_idx:
-            # Duplicate worker ID - choose the older registration
-            other_hotkey_idx = worker_ids_to_hotkey_idx[worker_id]
-            if block_at_registration[i] < block_at_registration[other_hotkey_idx]:
-                # Current hotkey registered earlier, use it
-                other_hotkey = hotkeys[other_hotkey_idx]
-                if other_hotkey in hotkeys_to_workers:
-                    del hotkeys_to_workers[other_hotkey]
+        # Priority 1: Try full hotkey (new format)
+        if hotkey in all_workers:
+            worker_id = hotkey
+            logging.debug(f"Found worker using full hotkey: {hotkey}")
+        # Priority 2: Try shortened format (legacy format)
+        else:
+            shortened_id = pool._get_worker_id_for_hotkey(hotkey)
+            if shortened_id in all_workers:
+                worker_id = shortened_id
+                logging.debug(f"Found worker using shortened ID: {shortened_id} for hotkey: {hotkey}")
+
+        if worker_id:
+            if worker_id in worker_ids_to_hotkey_idx:
+                # Duplicate worker ID - choose the older registration
+                other_hotkey_idx = worker_ids_to_hotkey_idx[worker_id]
+                if block_at_registration[i] < block_at_registration[other_hotkey_idx]:
+                    # Current hotkey registered earlier, use it
+                    other_hotkey = hotkeys[other_hotkey_idx]
+                    if other_hotkey in hotkeys_to_workers:
+                        del hotkeys_to_workers[other_hotkey]
+                    worker_ids_to_hotkey_idx[worker_id] = i
+                    hotkeys_to_workers[hotkey] = worker_id
+            else:
+                # First time seeing this worker ID
                 worker_ids_to_hotkey_idx[worker_id] = i
                 hotkeys_to_workers[hotkey] = worker_id
-        else:
-            # First time seeing this worker ID
-            worker_ids_to_hotkey_idx[worker_id] = i
-            hotkeys_to_workers[hotkey] = worker_id
 
     for hotkey in hotkeys:
         worker_id = hotkeys_to_workers.get(hotkey)
@@ -115,10 +136,12 @@ def get_metrics_timerange(
 
         worker_data = all_workers.get(worker_id, {})
         
-        # Add detailed logging
-        import logging
-        logging.info(f"ProxyMetricsCreate - hotkey: {hotkey}, worker_id: {worker_id}")
-        logging.info(f"ProxyMetricsCreate - worker_data raw data: {worker_data}")
+        # Log worker data for debugging
+        if worker_data:
+            logging.info(f"✅ Found worker data - hotkey: {hotkey[:8]}...{hotkey[-8:]}, worker_id: {worker_id if len(worker_id) <= 16 else worker_id[:8]+'...'+worker_id[-8:]}")
+            logging.debug(f"Worker data: hashrate={worker_data.get('hashrate', 0)}, shares={worker_data.get('shares', 0)}")
+        else:
+            logging.warning(f"❌ No worker data found - hotkey: {hotkey[:8]}...{hotkey[-8:]}, worker_id: {worker_id}")
         
         share_value_raw = worker_data.get("share_value", 0.0)
         hashrate_raw = worker_data.get("hashrate", 0.0)
