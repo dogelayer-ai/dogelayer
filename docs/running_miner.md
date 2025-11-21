@@ -347,6 +347,6 @@ Note: Follow the exact format for setting difficulty.
 
 - GitHub Issues: https://github.com/dogelayer-ai/dogelayer/issues
 - Bittensor Discord: Subnet 109 channel
-- Documentation: https://docs.dogelayer.ai
+- Documentation: https://github.com/dogelayer-ai/dogelayer/tree/main/docs
 
 Happy mining!

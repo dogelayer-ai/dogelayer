@@ -229,15 +229,7 @@ btcli wallet overview \
 - Recommended: 5-10 TAO (for stable operation)
 - Validator Permit: May require more depending on competition
 
-### 4. Get Subnet Proxy Credentials
-
-Contact the DogeLayer team to obtain:
-- Proxy API URL
-- Proxy API Token
-
-These credentials are required for validators to access miner data.
-
-### 5. Configure Environment
+### 4. Configure Environment
 
 Create `.env` file in `dogelayer/validator/` directory:
 
@@ -248,7 +240,7 @@ SUBTENSOR_NETWORK=finney
 BT_WALLET_NAME=my_validator
 BT_WALLET_HOTKEY=default
 
-# Subnet Proxy Configuration
+# Subnet Proxy Configuration (pre-configured)
 SUBNET_PROXY_API_URL=https://api.dogelayer.ai
 SUBNET_PROXY_API_TOKEN=your-api-token-here
 
@@ -258,7 +250,7 @@ DB_SUBMIT_INTERVAL_SECONDS=300
 LOGGING_LEVEL=info
 ```
 
-### 6. Run Validator
+### 5. Run Validator
 
 **Using Docker Compose (Recommended)**:
 
@@ -364,7 +356,7 @@ This software is provided "as is" without warranty of any kind. Use at your own 
 # Get Involved
 
 - Join the discussion on the [Bittensor Discord](https://discord.com/invite/bittensor) in the Subnet 109 channels.
-- Check out the [Bittensor Documentation](https://docs.bittensor.com/) for general information about running subnets and nodes.
+- Check out the [Bittensor Documentation](https://docs.learnbittensor.org/) for general information about running subnets and nodes.
 
 ---
 

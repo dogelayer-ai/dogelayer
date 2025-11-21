@@ -32,16 +32,7 @@ Bittensor Docs:
 
 ## Setup Steps
 
-### 1. Get Subnet Proxy Credentials
-
-Contact the DogeLayer team to receive:
-
-- **Proxy API URL**: The endpoint for retrieving miner statistics
-- **API Token**: Authentication token for the proxy API
-
-These credentials allow your validator to evaluate miners based on their mining contributions.
-
-### 2. Bittensor Wallet Setup
+### 1. Bittensor Wallet Setup
 
 Check your wallet, or create one if you have not already.
 
@@ -80,7 +71,7 @@ btcli wallet balance \
     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-### 3. Register on DogeLayer Subnet 109
+### 2. Register on DogeLayer Subnet 109
 
 ```bash
 btcli subnet register \
@@ -90,7 +81,7 @@ btcli subnet register \
   --subtensor.network finney
 ```
 
-### 4. Stake TAO (Required)
+### 3. Stake TAO (Required)
 
 Validators need sufficient stake to set weights:
 
@@ -114,7 +105,7 @@ btcli wallet overview \
 - **Recommended**: 5-10 TAO (for stable operation)
 - **Validator Permit**: May require more depending on competition
 
-### 5. Clone Repository
+### 4. Clone Repository
 
 ```bash
 # Clone the repository
@@ -122,7 +113,7 @@ git clone https://github.com/dogelayer-ai/dogelayer.git
 cd dogelayer
 ```
 
-### 6. Configuration
+### 5. Configuration
 
 Navigate to the validator directory and create a `.env` file:
 
@@ -141,7 +132,7 @@ SUBTENSOR_NETWORK=finney
 BT_WALLET_NAME=your_wallet_name
 BT_WALLET_HOTKEY=your_hotkey_name
 
-# Subnet Proxy Configuration (from DogeLayer team)
+# Subnet Proxy Configuration (pre-configured)
 SUBNET_PROXY_API_URL=https://api.dogelayer.ai
 SUBNET_PROXY_API_TOKEN=your-api-token-here
 
@@ -164,7 +155,7 @@ LOGGING_LEVEL=info
 # PROXY_API_TOKEN=your-api-token
 ```
 
-### 7. Running the Validator
+### 6. Running the Validator
 
 #### Using Docker Compose (Recommended)
 
