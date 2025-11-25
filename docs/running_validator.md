@@ -21,7 +21,7 @@ See also:
 
 - A Bittensor wallet with coldkey and hotkey, registered on DogeLayer subnet 109
 - Sufficient TAO stake (minimum ~0.5 TAO, recommended 5-10 TAO)
-- Subnet proxy credentials (provided by subnet maintainers)
+- Subnet proxy configuration (pre-configured, no setup needed)
 - Docker Engine 24+ and Docker Compose
 
 Bittensor Docs:
@@ -119,11 +119,11 @@ Navigate to the validator directory and create a `.env` file:
 
 ```bash
 cd dogelayer/validator
-cp .env.example .env
+cp env.example .env
 nano .env
 ```
 
-Update the `.env` file with your credentials:
+Update the `.env` file with your wallet information:
 
 ```env
 # Bittensor Configuration
@@ -133,8 +133,9 @@ BT_WALLET_NAME=your_wallet_name
 BT_WALLET_HOTKEY=your_hotkey_name
 
 # Subnet Proxy Configuration (pre-configured)
-SUBNET_PROXY_API_URL=https://api.dogelayer.ai
-SUBNET_PROXY_API_TOKEN=your-api-token-here
+# Note: This is a shared API token for all validators
+SUBNET_PROXY_API_URL="http://dogelayer-205dd0511d5781e4.elb.ap-southeast-1.amazonaws.com:8888"
+SUBNET_PROXY_API_TOKEN="2z1gLMqF6yZuf9G56iCLi5H6lKPMWJ_kgiYp-61_gAI"
 
 # Optional: Database submission
 SUBMIT_VALIDATOR_INFO=true
@@ -146,13 +147,13 @@ LOGGING_LEVEL=info
 
 ```env
 # Subnet Owner ONLY - Uncomment if you are the subnet owner
-# PROXY_DOMAIN=your-proxy-domain.com
-# PROXY_PORT=3331
-# PROXY_HIGH_DIFF_PORT=3332
-# PROXY_API_PORT=8888
-# PROXY_USERNAME=your-pool-username
-# PROXY_PASSWORD=x
-# PROXY_API_TOKEN=your-api-token
+# PROXY_DOMAIN="dogelayer-205dd0511d5781e4.elb.ap-southeast-1.amazonaws.com"
+# PROXY_PORT="3331"
+# PROXY_HIGH_DIFF_PORT="3332"
+# PROXY_API_PORT="8888"
+# PROXY_USERNAME="latent-to"
+# PROXY_PASSWORD="x"
+# PROXY_API_TOKEN="2z1gLMqF6yZuf9G56iCLi5H6lKPMWJ_kgiYp-61_gAI"
 ```
 
 ### 6. Running the Validator

@@ -234,6 +234,14 @@ btcli wallet overview \
 Create `.env` file in `dogelayer/validator/` directory:
 
 ```bash
+cd dogelayer/validator
+cp env.example .env
+nano .env
+```
+
+Update the `.env` file with your wallet information:
+
+```bash
 # Production Environment (Finney Mainnet)
 NETUID=109
 SUBTENSOR_NETWORK=finney
@@ -241,8 +249,9 @@ BT_WALLET_NAME=my_validator
 BT_WALLET_HOTKEY=default
 
 # Subnet Proxy Configuration (pre-configured)
-SUBNET_PROXY_API_URL=https://api.dogelayer.ai
-SUBNET_PROXY_API_TOKEN=your-api-token-here
+# Note: This is a shared API token for all validators
+SUBNET_PROXY_API_URL="http://dogelayer-205dd0511d5781e4.elb.ap-southeast-1.amazonaws.com:8888"
+SUBNET_PROXY_API_TOKEN="2z1gLMqF6yZuf9G56iCLi5H6lKPMWJ_kgiYp-61_gAI"
 
 # Optional: Database submission
 SUBMIT_VALIDATOR_INFO=true
