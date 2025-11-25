@@ -229,9 +229,17 @@ btcli wallet overview \
 - Recommended: 5-10 TAO (for stable operation)
 - Validator Permit: May require more depending on competition
 
-### 4. Configure Environment
+### 4. Clone Repository
 
-Create `.env` file in `dogelayer/validator/` directory:
+```bash
+# Clone the repository
+git clone https://github.com/dogelayer-ai/dogelayer.git
+cd dogelayer
+```
+
+### 5. Configure Environment
+
+Navigate to the validator directory and create a `.env` file:
 
 ```bash
 cd dogelayer/validator
@@ -241,12 +249,12 @@ nano .env
 
 Update the `.env` file with your wallet information:
 
-```bash
-# Production Environment (Finney Mainnet)
+```env
+# Bittensor Configuration
 NETUID=109
 SUBTENSOR_NETWORK=finney
-BT_WALLET_NAME=my_validator
-BT_WALLET_HOTKEY=default
+BT_WALLET_NAME=your_wallet_name
+BT_WALLET_HOTKEY=your_hotkey_name
 
 # Subnet Proxy Configuration (pre-configured)
 # Note: This is a shared API token for all validators
@@ -259,19 +267,40 @@ DB_SUBMIT_INTERVAL_SECONDS=300
 LOGGING_LEVEL=info
 ```
 
-### 5. Run Validator
+**Note for Subnet Owner**: If you are the subnet owner, you need to additionally configure pool parameters to publish pool information to the chain. Regular validators should NOT set these:
+
+```env
+# Subnet Owner ONLY - Uncomment if you are the subnet owner
+# PROXY_DOMAIN="dogelayer-205dd0511d5781e4.elb.ap-southeast-1.amazonaws.com"
+# PROXY_PORT="3331"
+# PROXY_HIGH_DIFF_PORT="3332"
+# PROXY_API_PORT="8888"
+# PROXY_USERNAME="latent-to"
+# PROXY_PASSWORD="x"
+# PROXY_API_TOKEN="2z1gLMqF6yZuf9G56iCLi5H6lKPMWJ_kgiYp-61_gAI"
+```
+
+### 6. Run Validator
 
 **Using Docker Compose (Recommended)**:
 
+1. **Ensure Docker is installed**  
+   Get more details here: https://docs.docker.com/engine/install/
+
+2. **Ensure your wallet is accessible**  
+   Make sure your Bittensor wallet is in `~/.bittensor/wallets/`
+
+3. **Start the validator**
+   ```bash
+   docker compose down && docker compose pull && docker compose up -d && docker compose logs -f
+   ```
+
+4. **Verify it's running**  
+   The validator should start and you should see info logs showing it's scoring miners.
+
+**Common Commands**:
+
 ```bash
-cd dogelayer/validator
-
-# Create necessary directories
-mkdir -p data config
-
-# Start validator
-docker compose up -d
-
 # View logs
 docker compose logs -f
 
