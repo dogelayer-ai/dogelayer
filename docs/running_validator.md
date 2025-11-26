@@ -280,9 +280,9 @@ Validators earn two types of rewards:
 #### Withdrawal Process for Validators
 
 1. **Login to DogeLayer Website**
-   - Visit the DogeLayer platform
-   - Connect using your Bittensor coldkey wallet
-   - Ensure you're using the validator wallet
+   - Visit the DogeLayer platform: https://dogelayer.ai/
+   - Connect using your Bittensor coldkey wallet (use the same coldkey that corresponds to your validator hotkey)
+   - Ensure you're using the correct validator wallet
 
 2. **Set Withdrawal Addresses**
    - Navigate to account settings or wallet management

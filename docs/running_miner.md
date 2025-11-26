@@ -186,7 +186,7 @@ You can monitor your mining performance through:
    - Monitor hashrate
    - Verify connection status
 
-2. **DogeLayer Website** (if available)
+2. **DogeLayer Website**: https://dogelayer.ai/
    - View your contribution
    - Check earnings
    - Monitor ranking
@@ -218,8 +218,8 @@ btcli wallet balance \
 #### Step-by-Step Withdrawal Process
 
 1. **Login to DogeLayer Website**
-   - Visit the DogeLayer platform
-   - Connect using your Bittensor coldkey wallet
+   - Visit the DogeLayer platform: https://dogelayer.ai/
+   - Connect using your Bittensor coldkey wallet (use the same coldkey that corresponds to your miner hotkey)
    - Ensure you're using the correct wallet that's registered for mining
 
 2. **Set Withdrawal Addresses**
