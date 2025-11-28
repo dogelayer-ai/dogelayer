@@ -28,7 +28,7 @@ See also:
 - **Network**: Stable internet connection with low latency
 - **OS**: Ubuntu 20.04 LTS or later (or any Linux distribution with Docker support)
 
-### Software Requirements
+### Other Requirements
 
 - A Bittensor wallet with coldkey and hotkey, registered on DogeLayer subnet 109
 - Sufficient TAO stake (minimum ~0.5 TAO, recommended 5-10 TAO)
