@@ -79,7 +79,7 @@ To run a miner with DogeLayer rewards, you will need:
 To run a DogeLayer validator, you will need:
 
 - A Bittensor wallet with coldkey and hotkey
-- Subnet proxy credentials (provided by subnet maintainers)
+- Subnet proxy configuration (pre-configured, no setup needed)
 - Sufficient TAO stake (minimum ~0.5 TAO, recommended 5-10 TAO)
 - Python 3.9 or higher environment
 - The most recent release of [Bittensor SDK](https://pypi.org/project/bittensor/)
