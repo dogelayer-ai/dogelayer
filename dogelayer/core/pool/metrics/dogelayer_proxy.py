@@ -95,23 +95,35 @@ def get_metrics_timerange(
     hotkeys_to_workers = {}
     worker_ids_to_hotkey_idx = {}
 
-    # Build mapping: try both full hotkey and shortened format
+    # Build mapping: support two formats
+    # Format 1: Full hotkey (e.g., 5GrwvaEF...utQY)
+    # Format 2: Full hotkey with suffix (e.g., 5GrwvaEF...utQY.rig001)
     for i, hotkey in enumerate(hotkeys):
-        # Try to find worker in pool data using different formats
-        worker_id = None
+        worker_ids = []
 
-        # Priority 1: Try full hotkey (new format)
+        # Priority 1: Try exact match (full hotkey without suffix)
         if hotkey in all_workers:
-            worker_id = hotkey
+            worker_ids.append(hotkey)
             logging.debug(f"Found worker using full hotkey: {hotkey}")
-        # Priority 2: Try shortened format (legacy format)
-        else:
-            shortened_id = pool._get_worker_id_for_hotkey(hotkey)
-            if shortened_id in all_workers:
-                worker_id = shortened_id
-                logging.debug(f"Found worker using shortened ID: {shortened_id} for hotkey: {hotkey}")
 
-        if worker_id:
+        # Priority 2: Try suffix matching (hotkey.xxx format)
+        # Search for all workers that start with this hotkey followed by a dot
+        for worker_id in all_workers.keys():
+            if "." in worker_id:
+                # Extract the hotkey part (before the first dot)
+                worker_hotkey = worker_id.split(".")[0]
+                if worker_hotkey == hotkey:
+                    worker_ids.append(worker_id)
+                    logging.info(f"✅ Found worker with suffix: {worker_id} matches hotkey: {hotkey[:8]}...{hotkey[-8:]}")
+
+        # If we found multiple workers with the same hotkey (e.g., hotkey.rig001, hotkey.rig002)
+        # we need to aggregate their data
+        if len(worker_ids) > 1:
+            logging.info(f"📊 Found {len(worker_ids)} workers for hotkey {hotkey[:8]}...{hotkey[-8:]}, will aggregate their data")
+            # Store all worker IDs for this hotkey
+            hotkeys_to_workers[hotkey] = worker_ids
+        elif len(worker_ids) == 1:
+            worker_id = worker_ids[0]
             if worker_id in worker_ids_to_hotkey_idx:
                 # Duplicate worker ID - choose the older registration
                 other_hotkey_idx = worker_ids_to_hotkey_idx[worker_id]
@@ -121,41 +133,55 @@ def get_metrics_timerange(
                     if other_hotkey in hotkeys_to_workers:
                         del hotkeys_to_workers[other_hotkey]
                     worker_ids_to_hotkey_idx[worker_id] = i
-                    hotkeys_to_workers[hotkey] = worker_id
+                    hotkeys_to_workers[hotkey] = [worker_id]
             else:
                 # First time seeing this worker ID
                 worker_ids_to_hotkey_idx[worker_id] = i
-                hotkeys_to_workers[hotkey] = worker_id
+                hotkeys_to_workers[hotkey] = [worker_id]
 
     for hotkey in hotkeys:
-        worker_id = hotkeys_to_workers.get(hotkey)
+        worker_ids = hotkeys_to_workers.get(hotkey)
 
-        if worker_id is None:
+        if worker_ids is None:
             metrics.append(ProxyMetrics(hotkey=hotkey))
             continue
 
-        worker_data = all_workers.get(worker_id, {})
+        # Aggregate data from all workers with this hotkey
+        total_share_value = 0.0
+        total_hashrate = 0.0
+        total_shares = 0
+        hash_rate_unit = "Gh/s"
+
+        for worker_id in worker_ids:
+            worker_data = all_workers.get(worker_id, {})
+
+            # Log worker data for debugging
+            if worker_data:
+                logging.info(f"✅ Found worker data - hotkey: {hotkey[:8]}...{hotkey[-8:]}, worker_id: {worker_id if len(worker_id) <= 16 else worker_id[:8]+'...'+worker_id[-8:]}")
+                logging.debug(f"Worker data: hashrate={worker_data.get('hashrate', 0)}, shares={worker_data.get('shares', 0)}, share_value={worker_data.get('share_value', 0)}")
+
+                # Accumulate values
+                total_share_value += worker_data.get("share_value", 0.0)
+                total_hashrate += worker_data.get("hashrate", 0.0)
+                total_shares += worker_data.get("shares", 0)
+                hash_rate_unit = worker_data.get("hash_rate_unit", "Gh/s")
+            else:
+                logging.warning(f"❌ No worker data found - hotkey: {hotkey[:8]}...{hotkey[-8:]}, worker_id: {worker_id}")
         
-        # Log worker data for debugging
-        if worker_data:
-            logging.info(f"✅ Found worker data - hotkey: {hotkey[:8]}...{hotkey[-8:]}, worker_id: {worker_id if len(worker_id) <= 16 else worker_id[:8]+'...'+worker_id[-8:]}")
-            logging.debug(f"Worker data: hashrate={worker_data.get('hashrate', 0)}, shares={worker_data.get('shares', 0)}")
+        # Log aggregated values
+        if len(worker_ids) > 1:
+            logging.info(f"📊 Aggregated {len(worker_ids)} workers for hotkey {hotkey[:8]}...{hotkey[-8:]}: "
+                        f"total_share_value={total_share_value}, total_hashrate={total_hashrate}, total_shares={total_shares}")
         else:
-            logging.warning(f"❌ No worker data found - hotkey: {hotkey[:8]}...{hotkey[-8:]}, worker_id: {worker_id}")
-        
-        share_value_raw = worker_data.get("share_value", 0.0)
-        hashrate_raw = worker_data.get("hashrate", 0.0)
-        shares_raw = worker_data.get("shares", 0)
-        
-        logging.info(f"ProxyMetricsCreate - extracted field values: hashrate={hashrate_raw}, shares={shares_raw}, share_value={share_value_raw}")
+            logging.info(f"ProxyMetricsCreate - extracted field values: hashrate={total_hashrate}, shares={total_shares}, share_value={total_share_value}")
 
         metrics.append(
             ProxyMetrics(
                 hotkey=hotkey,
-                hashrate=hashrate_raw,
-                shares=shares_raw,
-                share_value=share_value_raw,
-                hash_rate_unit=worker_data.get("hash_rate_unit", "Gh/s"),
+                hashrate=total_hashrate,
+                shares=total_shares,
+                share_value=total_share_value,
+                hash_rate_unit=hash_rate_unit,
             )
         )
 
