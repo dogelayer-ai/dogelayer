@@ -148,12 +148,29 @@ btcli subnet register \
 
 ### 3. Connect Your Mining Hardware
 
-Use your **48-character hotkey** as the miner username to connect to the mining pool:
+Use your **48-character hotkey** as the miner username to connect to the mining pool.
+
+**Miner Username Format:**
+
+DogeLayer supports two formats for miner usernames:
+
+1. **Single rig**: Use your full hotkey
+   ```
+   5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY
+   ```
+
+2. **Multiple rigs**: Add a suffix with dot (`.`) separator
+   ```
+   5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY.worker01
+   5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY.rig1
+   ```
 
 **Production Environment (Mainnet)**:
 - Pool: `stratum+tcp://stratum.dogelayer.ai:3331`
-- Username: `5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY` (your full hotkey)
+- Username: Your hotkey or `hotkey.suffix` for multiple rigs
 - Password: `x`
+
+**Important:** All rigs with the same hotkey share the same rewards. The suffix is only used to identify individual rigs.
 
 ### 4. Start Mining
 
