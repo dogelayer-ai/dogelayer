@@ -127,9 +127,9 @@ btcli subnet register \
   --subtensor.network finney
 ```
 
-### Step 3: Get Your Hotkey
+### Step 3: Get Your Hotkey and Understand Username Format
 
-Your hotkey is your miner username. Get your full 48-character hotkey:
+Get your full 48-character hotkey:
 
 ```bash
 btcli wallet overview \
@@ -139,13 +139,28 @@ btcli wallet overview \
 
 The hotkey will look like: `5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY`
 
-### Step 4: Configure Your Mining Hardware
+**Miner Username Format:**
 
-Use your **full 48-character hotkey** as the miner username to connect to the DogeLayer pool:
+DogeLayer supports two formats for miner usernames:
+
+1. **Single rig**: Use your full hotkey
+   ```
+   5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY
+   ```
+
+2. **Multiple rigs**: Add a suffix with dot (`.`) separator
+   ```
+   5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY.worker01
+   5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY.rig1
+   ```
+
+**Important:** Your username must include the complete 48-character hotkey. If using multiple rigs, add `.suffix` to identify each rig. All rigs with the same hotkey share the same rewards.
+
+### Step 4: Configure Your Mining Hardware
 
 **Production Pool (Mainnet)**:
 - **Stratum URL**: `stratum+tcp://stratum.dogelayer.ai:3331`
-- **Worker Name**: `5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY` (your full hotkey)
+- **Worker Name**: Your hotkey or `hotkey.suffix` for multiple rigs
 - **Password**: `x`
 
 #### Example Configuration
@@ -155,15 +170,37 @@ Use your **full 48-character hotkey** as the miner username to connect to the Do
 2. Navigate to pool configuration
 3. Enter the pool details:
    - URL: `stratum+tcp://stratum.dogelayer.ai:3331`
-   - Worker: Your full 48-character hotkey
+   - Worker: Your full hotkey (or `hotkey.worker01` for multiple rigs)
    - Password: `x`
+
+**Single rig:**
+```
+URL: stratum+tcp://stratum.dogelayer.ai:3331
+Worker: 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY
+Password: x
+```
+
+**Multiple rigs:**
+```
+# Rig 1
+Worker: 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY.rig1
+
+# Rig 2
+Worker: 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY.rig2
+```
 
 **For Mining Software** (cgminer, bfgminer, etc.):
 ```bash
-./cgminer \
-  --scrypt \
+# Single worker
+./cgminer --scrypt \
   -o stratum+tcp://stratum.dogelayer.ai:3331 \
   -u 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY \
+  -p x
+
+# Multiple workers
+./cgminer --scrypt \
+  -o stratum+tcp://stratum.dogelayer.ai:3331 \
+  -u 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY.worker01 \
   -p x
 ```
 
@@ -294,7 +331,7 @@ x;md=100000;
 ```
 
 Example:
-- Worker: `5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY`
+- Worker: `5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY` (or with `.suffix`)
 - Password: `x;md=100000;`
 
 Note: Follow the exact format for setting difficulty.
@@ -310,7 +347,7 @@ Note: Follow the exact format for setting difficulty.
 - Try pinging the pool server
 
 **Shares rejected**
-- Verify you're using the correct hotkey as username
+- Verify you're using the correct hotkey as username (or `hotkey.suffix` format)
 - Check that your hardware supports Scrypt algorithm
 - Ensure difficulty settings are appropriate
 - Monitor for hardware errors

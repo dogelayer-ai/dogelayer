@@ -190,7 +190,8 @@ class ProxyPoolAPI(PoolAPI):
 
             result = {}
             for worker_id, worker_data in workers.items():
-                result[self._worker_name_to_worker_id(worker_id)] = worker_data
+                result[worker_id] = worker_data
+                logging.debug(f"Added worker: {worker_id[:16]}... with data: hashrate={worker_data.get('hashrate', 0)}, shares={worker_data.get('shares', 0)}")
 
             return result
 
