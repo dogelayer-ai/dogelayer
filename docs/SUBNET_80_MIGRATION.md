@@ -9,6 +9,10 @@ This document describes what **miners** and **validators** need to change to swi
 - **What changes**: Bittensor CLI commands (`--netuid`) and any `NETUID` environment variable.
 - **What does not change**: Your wallet keys (coldkey/hotkey) and your mining hardware configuration (stratum URL / username) unless explicitly stated by the subnet operator.
 
+You can switch between the old and new subnet from the entry selector on:
+
+- https://dogelayer.ai/en
+
 ---
 
 ## Miners: What to Change
