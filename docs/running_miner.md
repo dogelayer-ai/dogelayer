@@ -31,11 +31,11 @@ Direct cryptocurrency earnings from actual Scrypt mining with **secondary distri
 
 ### 2. Alpha Token Rewards (Bittensor Registered Miners)
 
-Bittensor's **Subnet 109** adds a second layer of incentives for miners who register their wallet and hotkey.
+Bittensor's **Subnet 80** adds a second layer of incentives for miners who register their wallet and hotkey.
 
 - **Value-Based Rewards**: Alpha tokens based on the hashpower value you provide
 - **Value Calculation**: Based on hashprice index and current exchange rates
-- **Eligibility**: Requires registration on **Bittensor Subnet 109**
+- **Eligibility**: Requires registration on **Bittensor Subnet 80**
 - **Continuous Accumulation**: Tokens accrue automatically as you mine
 - **Convertibility**: Alpha tokens can be unstaked to TAO for liquidity
 
@@ -106,14 +106,14 @@ btcli wallet balance \
     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-### Step 2: Register on Subnet 109 (Mainnet)
+### Step 2: Register on Subnet 80 (Mainnet)
 
 #### Check registration status
 
 ```bash
 btcli wallet overview \
   --wallet.name YOUR_WALLET \
-  --netuid 109 \
+  --netuid 80 \
   --subtensor.network finney
 ```
 
@@ -121,7 +121,7 @@ btcli wallet overview \
 
 ```bash
 btcli subnet register \
-  --netuid 109 \
+  --netuid 80 \
   --wallet.name YOUR_WALLET \
   --wallet.hotkey YOUR_HOTKEY \
   --subtensor.network finney
@@ -159,7 +159,7 @@ DogeLayer supports two formats for miner usernames:
 ### Step 4: Configure Your Mining Hardware
 
 **Production Pool (Mainnet)**:
-- **Stratum URL**: `stratum+tcp://stratum.dogelayer.ai:3331`
+- **Stratum URL**: `stratum+tcp://sn80-stratum.dogelayer.ai:3331`
 - **Worker Name**: Your hotkey or `hotkey.suffix` for multiple rigs
 - **Password**: `x`
 
@@ -169,13 +169,13 @@ DogeLayer supports two formats for miner usernames:
 1. Access your miner's web interface
 2. Navigate to pool configuration
 3. Enter the pool details:
-   - URL: `stratum+tcp://stratum.dogelayer.ai:3331`
+   - URL: `stratum+tcp://sn80-stratum.dogelayer.ai:3331`
    - Worker: Your full hotkey (or `hotkey.worker01` for multiple rigs)
    - Password: `x`
 
 **Single rig:**
 ```
-URL: stratum+tcp://stratum.dogelayer.ai:3331
+URL: stratum+tcp://sn80-stratum.dogelayer.ai:3331
 Worker: 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY
 Password: x
 ```
@@ -193,13 +193,13 @@ Worker: 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY.rig2
 ```bash
 # Single worker
 ./cgminer --scrypt \
-  -o stratum+tcp://stratum.dogelayer.ai:3331 \
+  -o stratum+tcp://sn80-stratum.dogelayer.ai:3331 \
   -u 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY \
   -p x
 
 # Multiple workers
 ./cgminer --scrypt \
-  -o stratum+tcp://stratum.dogelayer.ai:3331 \
+  -o stratum+tcp://sn80-stratum.dogelayer.ai:3331 \
   -u 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY.worker01 \
   -p x
 ```
@@ -231,7 +231,7 @@ You can monitor your mining performance through:
 3. **Bittensor Network**
    ```bash
    btcli subnet metagraph \
-     --netuid 109 \
+     --netuid 80 \
      --subtensor.network finney | grep YOUR_HOTKEY
    ```
 
@@ -305,7 +305,7 @@ btcli wallet balance \
 4. **Monitor Share Acceptance**: Check logs to ensure shares are accepted
 
 ### For Bittensor Participants (Alpha Tokens)
-1. **Register on Subnet 109**: Required for Alpha rewards eligibility
+1. **Register on Subnet 80**: Required for Alpha rewards eligibility
 2. **Keep Your Hotkey Active**: Inactive hotkeys won't earn Alpha emissions
 3. **Monitor Accumulation**: Track token balances via your wallet
 4. **Think Long-Term**: Alpha represents network stake — value compounds as subnet grows
@@ -341,7 +341,7 @@ Note: Follow the exact format for setting difficulty.
 ### Connection Issues
 
 **Cannot connect to pool**
-- Verify the pool URL: `stratum+tcp://stratum.dogelayer.ai:3331`
+- Verify the pool URL: `stratum+tcp://sn80-stratum.dogelayer.ai:3331`
 - Check your internet connection
 - Ensure firewall isn't blocking port 3331
 - Try pinging the pool server
@@ -361,7 +361,7 @@ Note: Follow the exact format for setting difficulty.
 - Check subnet status
 
 **Not receiving Alpha rewards**
-- Confirm registration on subnet 109
+- Confirm registration on subnet 80
 - Verify hotkey is active and mining
 - Check emission schedule
 - Monitor wallet balance
@@ -383,7 +383,7 @@ Note: Follow the exact format for setting difficulty.
 ## Support
 
 - GitHub Issues: https://github.com/dogelayer-ai/dogelayer/issues
-- Bittensor Discord: Subnet 109 channel
+- Bittensor Discord: Subnet 80 channel
 - Documentation: https://github.com/dogelayer-ai/dogelayer/tree/main/docs
 
 Happy mining!

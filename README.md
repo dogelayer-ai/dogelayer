@@ -1,6 +1,6 @@
 <div align="center">
 
-# **DogeLayer** ![Subnet 109](https://img.shields.io/badge/Subnet-109-blue)
+# **DogeLayer** ![Subnet 80](https://img.shields.io/badge/Subnet-80-blue)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![Bittensor](https://img.shields.io/badge/bittensor-9.10.1-blue.svg)](https://github.com/opentensor/bittensor)
@@ -21,7 +21,7 @@ It is possible to contribute as a **miner** or a **validator**.
 
 **Related Bittensor Documentation**:
 - [Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction)
-- [DogeLayer Subnet Information](https://learnbittensor.org/subnets/109)
+- [DogeLayer Subnet Information](https://learnbittensor.org/subnets/80)
 - [Mining in Bittensor](https://docs.learnbittensor.org/miners/)
 - [Frequently asked questions (FAQ)](https://docs-git-permissions-list-bittensor.vercel.app/questions-and-answers)
 
@@ -51,9 +51,9 @@ Direct cryptocurrency earnings from actual mining with **secondary distribution*
 - **Processing Time**: 1-3 business days for withdrawal processing
 
 ## 2. Alpha Token Rewards (Bittensor Participants)
-Subnet 109 incentivizes miners with additional alpha token rewards:
+Subnet 80 incentivizes miners with additional alpha token rewards:
 - **Value-Based Rewards**: Alpha tokens based on the hashpower value you provide
-- **Requires Registration**: Only available to miners registered on Bittensor subnet 109
+- **Requires Registration**: Only available to miners registered on Bittensor subnet 80
 - **Subnet Stake**: Alpha tokens represent stake in the DogeLayer subnet
 - **Convertible to TAO**: Can be unstaked to TAO (Bittensor's primary currency)
 
@@ -135,14 +135,14 @@ btcli wallet new_coldkey --wallet.name my_miner
 btcli wallet new_hotkey --wallet.name my_miner --wallet.hotkey default
 ```
 
-### 2. Register to Subnet 109
+### 2. Register to Subnet 80
 
 ```bash
 # Production (Finney mainnet)
 btcli subnet register \
   --wallet.name my_miner \
   --wallet.hotkey default \
-  --netuid 109 \
+  --netuid 80 \
   --subtensor.network finney
 ```
 
@@ -166,7 +166,7 @@ DogeLayer supports two formats for miner usernames:
    ```
 
 **Production Environment (Mainnet)**:
-- Pool: `stratum+tcp://stratum.dogelayer.ai:3331`
+- Pool: `stratum+tcp://sn80-stratum.dogelayer.ai:3331`
 - Username: Your hotkey or `hotkey.suffix` for multiple rigs
 - Password: `x`
 
@@ -211,14 +211,14 @@ btcli wallet new_coldkey --wallet.name my_validator
 btcli wallet new_hotkey --wallet.name my_validator --wallet.hotkey default
 ```
 
-### 2. Register to Subnet 109
+### 2. Register to Subnet 80
 
 ```bash
 # Production (Finney mainnet)
 btcli subnet register \
   --wallet.name my_validator \
   --wallet.hotkey default \
-  --netuid 109 \
+  --netuid 80 \
   --subtensor.network finney
 ```
 
@@ -237,7 +237,7 @@ btcli stake add \
 # Check stake status
 btcli wallet overview \
   --wallet.name my_validator \
-  --netuid 109 \
+  --netuid 80 \
   --subtensor.network finney
 ```
 
@@ -268,7 +268,7 @@ Update the `.env` file with your wallet information:
 
 ```env
 # Bittensor Configuration
-NETUID=109
+NETUID=80
 SUBTENSOR_NETWORK=finney
 BT_WALLET_NAME=your_wallet_name
 BT_WALLET_HOTKEY=your_hotkey_name
@@ -388,11 +388,11 @@ docker compose down
 # Subnet Information
 
 ## Production Environment (Finney Mainnet)
-- **Subnet ID (netuid)**: 109
+- **Subnet ID (netuid)**: 80
 - **Network**: Finney (mainnet)
 - **Network Parameter**: `--subtensor.network finney`
 - **Algorithm**: Scrypt (LTC/DOGE)
-- **Pool Address**: `stratum+tcp://stratum.dogelayer.ai:3331`
+- **Pool Address**: `stratum+tcp://sn80-stratum.dogelayer.ai:3331`
 - **Emission**: Dynamic based on contribution
 
 ---
@@ -410,7 +410,7 @@ This software is provided "as is" without warranty of any kind. Use at your own 
 
 # Get Involved
 
-- Join the discussion on the [Bittensor Discord](https://discord.com/invite/bittensor) in the Subnet 109 channels.
+- Join the discussion on the [Bittensor Discord](https://discord.com/invite/bittensor) in the Subnet 80 channels.
 - Check out the [Bittensor Documentation](https://docs.learnbittensor.org/) for general information about running subnets and nodes.
 
 ---
