@@ -95,9 +95,10 @@ NETUID=80
 SUBTENSOR_NETWORK=finney
 BT_WALLET_NAME=your_wallet_name
 BT_WALLET_HOTKEY=your_hotkey_name
+SUBNET_PROXY_API_URL="http://dogelayer-205dd0511d5781e4.elb.ap-southeast-1.amazonaws.com:8889"
 ```
 
-If your validator uses the subnet proxy API, **do not change those values unless your subnet operator provides new ones**.
+If your validator uses the subnet proxy API, update `SUBNET_PROXY_API_URL` to the new subnet 80 endpoint shown above.
 
 ---
 

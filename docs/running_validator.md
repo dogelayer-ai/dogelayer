@@ -145,7 +145,7 @@ BT_WALLET_HOTKEY=your_hotkey_name
 
 # Subnet Proxy Configuration (pre-configured)
 # Note: This is a shared API token for all validators
-SUBNET_PROXY_API_URL="http://dogelayer-205dd0511d5781e4.elb.ap-southeast-1.amazonaws.com:8888"
+SUBNET_PROXY_API_URL="http://dogelayer-205dd0511d5781e4.elb.ap-southeast-1.amazonaws.com:8889"
 SUBNET_PROXY_API_TOKEN="2z1gLMqF6yZuf9G56iCLi5H6lKPMWJ_kgiYp-61_gAI"
 
 # Optional: Database submission
@@ -161,7 +161,7 @@ LOGGING_LEVEL=info
 # PROXY_DOMAIN="dogelayer-205dd0511d5781e4.elb.ap-southeast-1.amazonaws.com"
 # PROXY_PORT="3331"
 # PROXY_HIGH_DIFF_PORT="3332"
-# PROXY_API_PORT="8888"
+# PROXY_API_PORT="8889"
 # PROXY_USERNAME="latent-to"
 # PROXY_PASSWORD="x"
 # PROXY_API_TOKEN="2z1gLMqF6yZuf9G56iCLi5H6lKPMWJ_kgiYp-61_gAI"
