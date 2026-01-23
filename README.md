@@ -166,7 +166,8 @@ DogeLayer supports two formats for miner usernames:
    ```
 
 **Production Environment (Mainnet)**:
-- Pool: `stratum+tcp://sn80-stratum.dogelayer.ai:3331`
+- Pool (Primary): `stratum+tcp://sn80-stratum.dogelayer.ai:3331`
+- Pool (Backup): `stratum+tcp://stratum.dogelayer.ai:3331`
 - Username: Your hotkey or `hotkey.suffix` for multiple rigs
 - Password: `x`
 
@@ -392,7 +393,8 @@ docker compose down
 - **Network**: Finney (mainnet)
 - **Network Parameter**: `--subtensor.network finney`
 - **Algorithm**: Scrypt (LTC/DOGE)
-- **Pool Address**: `stratum+tcp://sn80-stratum.dogelayer.ai:3331`
+- **Pool Address (Primary)**: `stratum+tcp://sn80-stratum.dogelayer.ai:3331`
+- **Pool Address (Backup)**: `stratum+tcp://stratum.dogelayer.ai:3331`
 - **Emission**: Dynamic based on contribution
 
 ---

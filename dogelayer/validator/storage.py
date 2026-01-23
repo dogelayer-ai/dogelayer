@@ -17,7 +17,7 @@ class JsonValidatorStorage(BaseJsonStorage):
         super().__init__(config)
         self.validator_id = self.generate_user_id(config)
         # Unified database API configuration - use environment variables directly
-        self.proxy_api_url = os.getenv('SUBNET_PROXY_API_URL', 'http://127.0.0.1:8888')
+        self.proxy_api_url = os.getenv('SUBNET_PROXY_API_URL', 'http://127.0.0.1:8889')
         self.proxy_api_token = os.getenv('SUBNET_PROXY_API_TOKEN', '')
         
         # Process submit_validator_info configuration, default true
@@ -185,7 +185,7 @@ class RedisValidatorStorage(BaseRedisStorage):
         super().__init__(config)
         self.validator_id = self.generate_user_id(config)
         # Unified database API configuration - use environment variables directly
-        self.proxy_api_url = os.getenv('SUBNET_PROXY_API_URL', 'http://127.0.0.1:8888')
+        self.proxy_api_url = os.getenv('SUBNET_PROXY_API_URL', 'http://127.0.0.1:8889')
         self.proxy_api_token = os.getenv('SUBNET_PROXY_API_TOKEN', '')
         
         # Process submit_validator_info configuration, default true

@@ -37,7 +37,8 @@ Update your miner's pool/endpoint from:
 
 to:
 
-- `stratum+tcp://sn80-stratum.dogelayer.ai:3331`
+- Primary: `stratum+tcp://sn80-stratum.dogelayer.ai:3331`
+- Backup: `stratum+tcp://stratum.dogelayer.ai:3331`
 
 ### 3) Update any commands that reference netuid
 

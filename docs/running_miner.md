@@ -159,7 +159,8 @@ DogeLayer supports two formats for miner usernames:
 ### Step 4: Configure Your Mining Hardware
 
 **Production Pool (Mainnet)**:
-- **Stratum URL**: `stratum+tcp://sn80-stratum.dogelayer.ai:3331`
+- **Stratum URL (Primary)**: `stratum+tcp://sn80-stratum.dogelayer.ai:3331`
+- **Stratum URL (Backup)**: `stratum+tcp://stratum.dogelayer.ai:3331`
 - **Worker Name**: Your hotkey or `hotkey.suffix` for multiple rigs
 - **Password**: `x`
 
@@ -169,13 +170,15 @@ DogeLayer supports two formats for miner usernames:
 1. Access your miner's web interface
 2. Navigate to pool configuration
 3. Enter the pool details:
-   - URL: `stratum+tcp://sn80-stratum.dogelayer.ai:3331`
+   - URL (Primary): `stratum+tcp://sn80-stratum.dogelayer.ai:3331`
+   - URL (Backup): `stratum+tcp://stratum.dogelayer.ai:3331`
    - Worker: Your full hotkey (or `hotkey.worker01` for multiple rigs)
    - Password: `x`
 
 **Single rig:**
 ```
-URL: stratum+tcp://sn80-stratum.dogelayer.ai:3331
+URL (Primary): stratum+tcp://sn80-stratum.dogelayer.ai:3331
+URL (Backup): stratum+tcp://stratum.dogelayer.ai:3331
 Worker: 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY
 Password: x
 ```
@@ -197,9 +200,20 @@ Worker: 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY.rig2
   -u 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY \
   -p x
 
+# If the primary URL fails, use the backup URL
+./cgminer --scrypt \
+  -o stratum+tcp://stratum.dogelayer.ai:3331 \
+  -u 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY \
+  -p x
+
 # Multiple workers
 ./cgminer --scrypt \
   -o stratum+tcp://sn80-stratum.dogelayer.ai:3331 \
+  -u 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY.worker01 \
+  -p x
+
+./cgminer --scrypt \
+  -o stratum+tcp://stratum.dogelayer.ai:3331 \
   -u 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY.worker01 \
   -p x
 ```
@@ -341,7 +355,8 @@ Note: Follow the exact format for setting difficulty.
 ### Connection Issues
 
 **Cannot connect to pool**
-- Verify the pool URL: `stratum+tcp://sn80-stratum.dogelayer.ai:3331`
+- Verify the pool URL (primary): `stratum+tcp://sn80-stratum.dogelayer.ai:3331`
+- If needed, switch to the backup URL: `stratum+tcp://stratum.dogelayer.ai:3331`
 - Check your internet connection
 - Ensure firewall isn't blocking port 3331
 - Try pinging the pool server
