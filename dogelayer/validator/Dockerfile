@@ -24,7 +24,7 @@ RUN pip install --no-cache-dir -e .
 # Force install specific version of bittensor (this will invoke Rust compiler)
 RUN pip install --no-cache-dir --force-reinstall \
     bittensor==9.10.1 \
-    bittensor-wallet \
+    bittensor-wallet==4.0.1 \
     tabulate \
     python-dotenv
 
