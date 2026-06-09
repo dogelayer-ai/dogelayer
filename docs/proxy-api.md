@@ -160,8 +160,3 @@ The `unit` parameter applies only to live worker stats and timerange queries. It
 - `/api/pool/stats`
 - `/api/workers/history/{worker}`
 
----
-
-## Changelog
-
-- **2026-06**: Added optional `unit=gh|mh` on `GET /api/workers/stats` and `GET /api/workers/timerange`. Default unchanged (`gh` / GH/s).
