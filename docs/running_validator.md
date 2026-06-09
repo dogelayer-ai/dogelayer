@@ -11,6 +11,7 @@ Validators are rewarded in DogeLayer's subnet-specific (alpha) token on the Bitt
 See also:
 
 - [Introduction to DogeLayer](../README.md)
+- [Proxy API reference (hashrate `unit` parameter)](proxy-api.md)
 - [Introduction to Bittensor](https://docs.learnbittensor.org/learn/introduction)
 - [Yuma Consensus](https://docs.learnbittensor.org/yuma-consensus/)
 - [Emissions](https://docs.learnbittensor.org/emissions/)
@@ -200,6 +201,8 @@ LOGGING_LEVEL=info
 2. They calculate share values based on miner contributions (LTC/DOGE mining)
 3. Weights are set every `tempo` blocks (every epoch) based on moving averages
 4. All validators use the same proxy endpoint for consistent evaluation
+
+The proxy exposes `GET /api/workers/stats` and `GET /api/workers/timerange` for this data. An optional `unit=gh|mh` query parameter controls hashrate display units (default **GH/s**, unchanged from prior behavior). See [Proxy API reference](proxy-api.md).
 
 ## Managing Your Validator
 
