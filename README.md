@@ -380,6 +380,7 @@ docker compose down
 ### Complete Guides
 - [Miner Setup Guide](./docs/running_miner.md) - Complete guide for setting up and running a DogeLayer miner
 - [Validator Setup Guide](./docs/running_validator.md) - Complete guide for setting up and running a DogeLayer validator
+- [Proxy API Reference](./docs/proxy-api.md) - Worker stats endpoints, including optional `unit=gh|mh` hashrate parameter
 
 
 
@@ -418,6 +419,7 @@ This software is provided "as is" without warranty of any kind. Use at your own 
 **Full Guides:**
 - [DogeLayer Miner Setup Guide](docs/running_miner.md)
 - [DogeLayer Validator Setup Guide](docs/running_validator.md)
+- [Proxy API Reference](docs/proxy-api.md)
 
 ---
 
