@@ -202,7 +202,9 @@ LOGGING_LEVEL=info
 3. Weights are set every `tempo` blocks (every epoch) based on moving averages
 4. All validators use the same proxy endpoint for consistent evaluation
 
-The proxy exposes `GET /api/workers/stats` and `GET /api/workers/timerange` for this data. An optional `unit=gh|mh` query parameter controls hashrate display units (default **GH/s**, unchanged from prior behavior). See [Proxy API reference](proxy-api.md).
+The proxy exposes `GET /api/workers/stats` and `GET /api/workers/timerange` for this data. An optional `unit=gh|mh` query parameter controls hashrate display units (default **GH/s**, unchanged from prior behavior).
+
+Both endpoints also return **`pool_observer_url`** — a read-only F2Pool observer page link for **upstream hashrate audit** (compare proxy/ClickHouse stats with F2Pool’s dashboard). This field is for manual verification only and **does not affect scoring**. See [Proxy API reference](proxy-api.md#f2pool-observer-link-pool_observer_url).
 
 ## Managing Your Validator
 
