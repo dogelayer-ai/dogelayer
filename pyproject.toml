@@ -24,9 +24,9 @@ classifiers = [
 ]
 
 dependencies = [
-    "bittensor>=9.0.0",
+    "bittensor==9.10.1",
     "bittensor-commit-reveal",
-    "bittensor-wallet>=1.1.0",
+    "bittensor-wallet==4.0.1",
     "python-dotenv>=0.21.0",
     "redis>=5.0.0",
     "httpx>=0.25.0",

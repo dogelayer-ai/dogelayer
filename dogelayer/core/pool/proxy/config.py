@@ -9,7 +9,7 @@ from dogelayer.core.pool.pool import PoolIndex
 class ProxyPoolAPIConfig(PoolAPIConfig):
     """Configuration for Proxy Pool API access"""
 
-    DEFAULT_API_PORT = 8888
+    DEFAULT_API_PORT = 8889
 
     def __init__(self, proxy_url: str, api_token: str):
         super().__init__()

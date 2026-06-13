@@ -31,7 +31,7 @@ See also:
 
 ### Other Requirements
 
-- A Bittensor wallet with coldkey and hotkey, registered on DogeLayer subnet 109
+- A Bittensor wallet with coldkey and hotkey, registered on DogeLayer subnet 80
 - Sufficient TAO stake (minimum ~0.5 TAO, recommended 5-10 TAO)
 - Subnet proxy configuration (pre-configured, no setup needed)
 - Docker Engine 24+ and Docker Compose
@@ -83,11 +83,11 @@ btcli wallet balance \
     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-### 2. Register on DogeLayer Subnet 109
+### 2. Register on DogeLayer Subnet 80
 
 ```bash
 btcli subnet register \
-  --netuid 109 \
+  --netuid 80 \
   --wallet.name YOUR_WALLET \
   --wallet.hotkey YOUR_HOTKEY \
   --subtensor.network finney
@@ -108,7 +108,7 @@ btcli stake add \
 # Check stake status
 btcli wallet overview \
   --wallet.name YOUR_WALLET \
-  --netuid 109 \
+  --netuid 80 \
   --subtensor.network finney
 ```
 
@@ -139,14 +139,14 @@ Update the `.env` file with your wallet information:
 
 ```env
 # Bittensor Configuration
-NETUID=109
+NETUID=80
 SUBTENSOR_NETWORK=finney
 BT_WALLET_NAME=your_wallet_name
 BT_WALLET_HOTKEY=your_hotkey_name
 
 # Subnet Proxy Configuration (pre-configured)
 # Note: This is a shared API token for all validators
-SUBNET_PROXY_API_URL="http://dogelayer-205dd0511d5781e4.elb.ap-southeast-1.amazonaws.com:8888"
+SUBNET_PROXY_API_URL="http://dogelayer-205dd0511d5781e4.elb.ap-southeast-1.amazonaws.com:8889"
 SUBNET_PROXY_API_TOKEN="2z1gLMqF6yZuf9G56iCLi5H6lKPMWJ_kgiYp-61_gAI"
 
 # Optional: Database submission
@@ -162,7 +162,7 @@ LOGGING_LEVEL=info
 # PROXY_DOMAIN="dogelayer-205dd0511d5781e4.elb.ap-southeast-1.amazonaws.com"
 # PROXY_PORT="3331"
 # PROXY_HIGH_DIFF_PORT="3332"
-# PROXY_API_PORT="8888"
+# PROXY_API_PORT="8889"
 # PROXY_USERNAME="latent-to"
 # PROXY_PASSWORD="x"
 # PROXY_API_TOKEN="2z1gLMqF6yZuf9G56iCLi5H6lKPMWJ_kgiYp-61_gAI"
@@ -190,7 +190,7 @@ LOGGING_LEVEL=info
 
 ## Important Parameters
 
-- `netuid`: Set to 109 for DogeLayer subnet
+- `netuid`: Set to 80 for DogeLayer subnet
 - `subtensor.network`: Set to `finney` for mainnet
 - `wallet.name`: Your Bittensor wallet name
 - `wallet.hotkey`: Your wallet's hotkey
@@ -247,7 +247,7 @@ docker stats dogelayer-validator
 ### Check Weights on Chain
 ```bash
 btcli subnet metagraph \
-  --netuid 109 \
+  --netuid 80 \
   --subtensor.network finney
 ```
 
@@ -330,6 +330,6 @@ Validators earn two types of rewards:
 ## Support
 
 - GitHub Issues: https://github.com/dogelayer-ai/dogelayer/issues
-- Bittensor Discord: Subnet 109 channel
+- Bittensor Discord: Subnet 80 channel
 
 Happy validating!

@@ -140,11 +140,11 @@ class DogeLayerProxyValidator(BaseValidator):
     def _measure_network_latency(self, target_host: str = "8.8.8.8", timeout: int = 3) -> float:
         """Measure network latency by ping test"""
         backup_hosts = ["1.1.1.1", "8.8.4.4"] if target_host == "8.8.8.8" else ["8.8.8.8"]
-        
+
         latency = self._ping_host(target_host, timeout)
         if latency > 0:
             return latency
-            
+
         for backup_host in backup_hosts:
             latency = self._ping_host(backup_host, timeout)
             if latency > 0:
@@ -162,7 +162,7 @@ class DogeLayerProxyValidator(BaseValidator):
             else:
                 # Linux/Unix: ping -c 1 -W 3 8.8.8.8
                 cmd = ["ping", "-c", "1", "-W", str(timeout), target_host]
-            
+
             result = subprocess.run(
                 cmd, 
                 capture_output=True, 
@@ -218,17 +218,11 @@ class DogeLayerProxyValidator(BaseValidator):
         current_time = int(time.time())
 
         if self.last_evaluation_timestamp is None or self.last_evaluation_timestamp >= current_time:
-            start_time = current_time - (60 * 60)
+            start_time = current_time - (10 * 60)
             logging.info(
-                f"First evaluation or state recovery - using last 60 minutes for testing.")
+                f"First evaluation or state recovery - using last 10 minutes for testing.")
         else:
-            min_window = 30 * 60
-            if current_time - self.last_evaluation_timestamp < min_window:
-                start_time = current_time - min_window
-                logging.info(
-                    f"Extended time window to {min_window/60} minutes for testing.")
-            else:
-                start_time = self.last_evaluation_timestamp
+            start_time = self.last_evaluation_timestamp
 
         end_time = current_time
         max_range = 24 * 60 * 60
@@ -338,7 +332,7 @@ class DogeLayerProxyValidator(BaseValidator):
             "version": "1.0.0",
             
         }
-        
+
         logging.info("=== Validator State Details ===")
         logging.info(f"Block: {state['current_block']}")
         logging.info(f"UID: {state['uid']}")
@@ -431,7 +425,7 @@ class DogeLayerProxyValidator(BaseValidator):
         #     return self._set_weights_with_commit_reveal(weights)
         # else:
         #     return self._set_weights_direct(weights)
-        
+
         return self._set_weights_direct(weights)
 
     def _set_weights_direct(self, weights: list[float]) -> tuple[bool, str]:
