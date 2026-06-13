@@ -380,7 +380,15 @@ docker compose down
 ### Complete Guides
 - [Miner Setup Guide](./docs/running_miner.md) - Complete guide for setting up and running a DogeLayer miner
 - [Validator Setup Guide](./docs/running_validator.md) - Complete guide for setting up and running a DogeLayer validator
-- [Proxy API Reference](./docs/proxy-api.md) - Worker stats endpoints, including optional `unit=gh|mh` hashrate parameter
+- [Proxy API Reference](./docs/proxy-api.md) - Worker stats endpoints, optional `unit=gh|mh`, and F2Pool observer link (`pool_observer_url`) for upstream audit
+
+### Upstream pool audit (F2Pool observer)
+
+Validators can compare proxy/ClickHouse hashrate with the upstream F2Pool account on this **read-only** page (same URL returned as `pool_observer_url` from `GET /api/workers/stats` and `GET /api/workers/timerange`):
+
+**[F2Pool observer — DogeLayer upstream (taosub)](https://www.f2pool.com/mining-user-ltc/4c4d13e15249e898a3ba76d49c8aaa60?user_name=taosub)**
+
+See [Proxy API — F2Pool observer link](./docs/proxy-api.md#f2pool-observer-link-pool_observer_url) for field details. This link is for manual audit only and does not affect validator scoring.
 
 
 
@@ -394,6 +402,7 @@ docker compose down
 - **Network Parameter**: `--subtensor.network finney`
 - **Algorithm**: Scrypt (LTC/DOGE)
 - **Pool Address**: `stratum+tcp://stratum.dogelayer.ai:3331`
+- **F2Pool observer (upstream audit)**: [open read-only dashboard](https://www.f2pool.com/mining-user-ltc/4c4d13e15249e898a3ba76d49c8aaa60?user_name=taosub)
 - **Emission**: Dynamic based on contribution
 
 ---
